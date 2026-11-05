@@ -15,6 +15,22 @@ export class AuthService {
   private readonly maxLoginAttempts = 5;
   private readonly lockoutDuration = 15 * 60 * 1000; // 15 minutes
 
+  // In-memory session cache to avoid duplicate remote DB round-trips on every request
+  private sessionCache = new Map<
+    string,
+    {
+      data: {
+        userId: string;
+        role: string;
+        mfaVerified: boolean;
+        mustSetupMfa: boolean;
+        csrfToken: string;
+      };
+      expiresAt: Date;
+      lastActive: number;
+    }
+  >();
+
   constructor(
     private prisma: PrismaService,
     private config: ConfigService,
@@ -259,6 +275,7 @@ export class AuthService {
       where: { id: sessionId },
       data: { mfaVerified: true },
     });
+    this.sessionCache.delete(sessionId);
 
     await this.audit.log({
       actorId: user.id,
@@ -365,6 +382,26 @@ export class AuthService {
     mustSetupMfa: boolean;
     csrfToken: string;
   } | null> {
+    const now = Date.now();
+    const cached = this.sessionCache.get(sessionId);
+
+    if (cached) {
+      if (cached.expiresAt.getTime() > now && now - cached.lastActive <= this.idleTimeout) {
+        // Debounce DB lastActive update: write at most once per 60 seconds non-blocking
+        if (now - cached.lastActive > 60_000) {
+          cached.lastActive = now;
+          this.prisma.session
+            .update({
+              where: { id: sessionId },
+              data: { lastActive: new Date() },
+            })
+            .catch(() => {});
+        }
+        return cached.data;
+      }
+      this.sessionCache.delete(sessionId);
+    }
+
     const session = await this.prisma.session.findUnique({
       where: { id: sessionId },
       include: { user: true },
@@ -373,37 +410,50 @@ export class AuthService {
     if (!session) return null;
 
     // Check expiry
-    if (session.expiresAt < new Date()) {
-      await this.prisma.session.delete({ where: { id: sessionId } }).catch(() => {});
+    if (session.expiresAt.getTime() < now) {
+      this.prisma.session.delete({ where: { id: sessionId } }).catch(() => {});
+      this.sessionCache.delete(sessionId);
       return null;
     }
 
     // Check idle timeout
-    const idleTime = Date.now() - session.lastActive.getTime();
+    const idleTime = now - session.lastActive.getTime();
     if (idleTime > this.idleTimeout) {
-      await this.prisma.session.delete({ where: { id: sessionId } }).catch(() => {});
+      this.prisma.session.delete({ where: { id: sessionId } }).catch(() => {});
+      this.sessionCache.delete(sessionId);
       return null;
     }
 
-    // Update last active
-    await this.prisma.session.update({
-      where: { id: sessionId },
-      data: { lastActive: new Date() },
-    }).catch(() => {});
+    // Update last active non-blocking in background
+    this.prisma.session
+      .update({
+        where: { id: sessionId },
+        data: { lastActive: new Date() },
+      })
+      .catch(() => {});
 
-    return {
+    const sessionData = {
       userId: session.userId,
       role: session.user.role,
       mfaVerified: session.mfaVerified,
       mustSetupMfa: session.user.mustSetupMfa,
       csrfToken: session.csrfToken,
     };
+
+    this.sessionCache.set(sessionId, {
+      data: sessionData,
+      expiresAt: session.expiresAt,
+      lastActive: now,
+    });
+
+    return sessionData;
   }
 
   /**
    * Logout — destroy session
    */
   async logout(sessionId: string, userId: string): Promise<void> {
+    this.sessionCache.delete(sessionId);
     await this.prisma.session.delete({ where: { id: sessionId } }).catch(() => {});
     await this.audit.log({
       actorId: userId,

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { apiRequest } from '../lib/api-client';
+import { LoadingState } from '../components/LoadingState';
 import {
   Layers,
   CheckCircle2,
   AlertTriangle,
-  Shield,
   Download,
   KeyRound,
   RefreshCw,
@@ -57,42 +57,42 @@ export const AdminGenerationPage: React.FC = () => {
   const [mfaCode, setMfaCode] = useState<string>('123456');
   const [decisionReason, setDecisionReason] = useState<string>('');
 
-  // Load Data
-  const loadData = async () => {
-    setLoading(true);
+  // Load Data concurrently
+  const loadData = async (bypass = false) => {
+    if (!bankOverview) {
+      setLoading(true);
+    }
     setError(null);
     try {
-      // 1. Bank overview
-      const overviewRes = await apiRequest<any>('/generation/overview');
-      setBankOverview(overviewRes);
+      const [overviewRes, bpRes, cgRes, reqRes, papersRes] = await Promise.all([
+        apiRequest<any>('/generation/overview', { bypassCache: bypass }).catch(() => null),
+        apiRequest<any[]>('/blueprints', { bypassCache: bypass }).catch(() => []),
+        apiRequest<any[]>('/custodians/groups', { bypassCache: bypass }).catch(() => []),
+        apiRequest<any[]>('/generation/requests', { bypassCache: bypass }).catch(() => []),
+        apiRequest<any[]>('/generation/papers', { bypassCache: bypass }).catch(() => []),
+      ]);
 
-      // 2. Blueprints
-      const bpRes = await apiRequest<any[]>('/blueprints');
-      setBlueprints(bpRes || []);
-      if (bpRes && bpRes.length > 0) {
-        if (!selectedBlueprintId) {
-          setSelectedBlueprintId(bpRes[0].id);
+      if (overviewRes) setBankOverview(overviewRes);
+
+      const blueprintsList = bpRes || [];
+      setBlueprints(blueprintsList);
+      if (blueprintsList.length > 0) {
+        setSelectedBlueprintId((prev) => prev || blueprintsList[0].id);
+        if (blueprintsList[0].examId) {
+          setFormExamId((prev) => (prev === '00000000-0000-0000-0000-000000000001' ? blueprintsList[0].examId : prev));
         }
-        if (bpRes[0].examId) {
-          setFormExamId(bpRes[0].examId);
-        }
-        if (!formBlueprintVersionId && bpRes[0].versions?.length > 0) {
-          setFormBlueprintVersionId(bpRes[0].versions[0].id);
+        if (blueprintsList[0].versions?.length > 0) {
+          setFormBlueprintVersionId((prev) => prev || blueprintsList[0].versions[0].id);
         }
       }
 
-      // 3. Custodian Groups
-      const cgRes = await apiRequest<any[]>('/custodians/groups');
-      setCustodianGroups(cgRes || []);
-      if (cgRes && cgRes.length > 0 && !formCustodianGroupId) {
-        setFormCustodianGroupId(cgRes[0].id);
+      const groups = cgRes || [];
+      setCustodianGroups(groups);
+      if (groups.length > 0) {
+        setFormCustodianGroupId((prev) => prev || groups[0].id);
       }
 
-      // 4. Requests & Papers
-      const reqRes = await apiRequest<any[]>('/generation/requests');
       setRequests(reqRes || []);
-
-      const papersRes = await apiRequest<any[]>('/generation/papers');
       setPapers(papersRes || []);
     } catch (err: any) {
       setError(err.message || 'Failed to load paper generation dashboard');
@@ -235,23 +235,23 @@ export const AdminGenerationPage: React.FC = () => {
         <div>
           <div className="flex items-center space-x-3">
             <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-              Paper Generation & Release Console
+              Paper Generation
             </h1>
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-800 border border-slate-200 font-semibold">
-              Admin Dual-Control
+              Dual Control
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Constrained-optimization CP-SAT generation, threshold key split, and time-gated release
+            Automated question selection, key ceremony, and scheduled release.
           </p>
         </div>
         <button
-          onClick={loadData}
+          onClick={() => loadData(true)}
           disabled={loading}
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 transition border border-slate-300"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-red-600' : 'text-slate-600'}`} />
-          <span>{loading ? 'Refreshing...' : 'Refresh Console'}</span>
+          <span>{loading ? 'Refreshing...' : 'Refresh'}</span>
         </button>
       </div>
 
@@ -279,80 +279,69 @@ export const AdminGenerationPage: React.FC = () => {
         </div>
       )}
 
-      {/* Sub-tab Navigation (Restored to clean horizontal bar) */}
+      {/* Sub-tab Navigation */}
       <div className="flex gap-2 border-b border-slate-200 overflow-x-auto">
         <button
           onClick={() => setActiveSubTab('overview')}
-          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition whitespace-nowrap ${
+          className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition whitespace-nowrap ${
             activeSubTab === 'overview'
               ? 'border-red-600 text-slate-900 font-bold'
               : 'border-transparent text-slate-500 hover:text-slate-800'
           }`}
         >
-          1. Bank Overview (Counts Only)
+          Bank Overview
         </button>
         <button
           onClick={() => setActiveSubTab('blueprints')}
-          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition whitespace-nowrap ${
+          className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition whitespace-nowrap ${
             activeSubTab === 'blueprints'
               ? 'border-red-600 text-slate-900 font-bold'
               : 'border-transparent text-slate-500 hover:text-slate-800'
           }`}
         >
-          2. Blueprints & Readiness
+          Blueprints & Readiness
         </button>
         <button
           onClick={() => setActiveSubTab('requests')}
-          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition whitespace-nowrap ${
+          className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition whitespace-nowrap ${
             activeSubTab === 'requests'
               ? 'border-red-600 text-slate-900 font-bold'
               : 'border-transparent text-slate-500 hover:text-slate-800'
           }`}
         >
-          3. Generation Requests & Approvals
+          Requests
         </button>
         <button
           onClick={() => setActiveSubTab('papers')}
-          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition whitespace-nowrap ${
+          className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition whitespace-nowrap ${
             activeSubTab === 'papers'
               ? 'border-red-600 text-slate-900 font-bold'
               : 'border-transparent text-slate-500 hover:text-slate-800'
           }`}
         >
-          4. Paper Lifecycle & Delivery
+          Generated Papers
         </button>
       </div>
 
       {/* Standard Uniform Loading State (matching AdminPage.tsx exactly) */}
       {loading && !bankOverview ? (
-        <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-xs space-y-3">
-          <div className="inline-flex p-3 rounded-full bg-red-50 text-red-600 mb-1">
-            <Loader2 className="w-6 h-6 animate-spin" />
-          </div>
-          <h3 className="text-sm font-bold text-slate-900">Loading Paper Generation Console...</h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto font-mono">
-            Fetching institutional question inventory, blueprint constraints, and release lifecycle
-          </p>
-        </div>
+        <LoadingState
+          title="Loading Paper Generation Console..."
+          description="Fetching institutional question inventory, blueprint constraints, and release lifecycle"
+        />
       ) : (
         <>
           {/* TAB 1: Bank Overview */}
           {activeSubTab === 'overview' && (
             <div className="space-y-6">
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-900 flex items-start gap-2.5">
-                <Shield className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <div>
-                  <span className="font-bold text-amber-900">Confidentiality Guarantee:</span> The administrator console displays aggregate
-                  counts only. Question identifiers, stems, options, and candidate lists remain strictly obscured and sealed.
-                </div>
-              </div>
+
 
               {bankOverview && (
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
                     <div className="flex items-center justify-between">
                       <div className="text-[11px] uppercase tracking-wider font-bold text-slate-600">
-                        1. Eligible Question Bank
+                        Eligible Questions
                       </div>
                       <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">
                         Ready
@@ -361,13 +350,13 @@ export const AdminGenerationPage: React.FC = () => {
                     <div className="text-3xl font-extrabold text-slate-900 mt-2">
                       {bankOverview.overall.eligibleCount}
                     </div>
-                    <div className="text-xs text-slate-500 mt-1">Ready for automated selection</div>
+                    
                   </div>
 
                   <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
                     <div className="flex items-center justify-between">
                       <div className="text-[11px] uppercase tracking-wider font-bold text-slate-600">
-                        2. Pending Reviewer Review
+                        In Review
                       </div>
                       <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 text-[10px] font-bold">
                         In Progress
@@ -376,13 +365,13 @@ export const AdminGenerationPage: React.FC = () => {
                     <div className="text-3xl font-extrabold text-slate-900 mt-2">
                       {bankOverview.overall.pendingReviewerCount}
                     </div>
-                    <div className="text-xs text-slate-500 mt-1">Under peer review</div>
+                    
                   </div>
 
                   <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
                     <div className="flex items-center justify-between">
                       <div className="text-[11px] uppercase tracking-wider font-bold text-slate-600">
-                        3. Pending Moderator Review
+                        In Moderation
                       </div>
                       {bankOverview.overall.pendingModeratorCount > 0 ? (
                         <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold">
@@ -397,13 +386,13 @@ export const AdminGenerationPage: React.FC = () => {
                     <div className="text-3xl font-extrabold text-slate-900 mt-2">
                       {bankOverview.overall.pendingModeratorCount}
                     </div>
-                    <div className="text-xs text-slate-500 mt-1">Awaiting moderation approval</div>
+                    
                   </div>
 
                   <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
                     <div className="flex items-center justify-between">
                       <div className="text-[11px] uppercase tracking-wider font-bold text-slate-600">
-                        4. Pending Examiner Action
+                        Examiner Drafts
                       </div>
                       <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 text-[10px] font-bold">
                         Drafts
@@ -412,7 +401,7 @@ export const AdminGenerationPage: React.FC = () => {
                     <div className="text-3xl font-extrabold text-slate-900 mt-2">
                       {bankOverview.overall.pendingExaminerCount}
                     </div>
-                    <div className="text-xs text-slate-500 mt-1">Draft or changes requested</div>
+                    
                   </div>
                 </div>
               )}
@@ -421,17 +410,17 @@ export const AdminGenerationPage: React.FC = () => {
               {bankOverview?.bySubject && (
                 <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
                   <div className="px-6 py-4 border-b border-slate-200 font-bold text-slate-900 flex items-center justify-between">
-                    <span>Subject Inventory Breakdown (Numbers Only)</span>
-                    <span className="text-xs font-normal text-slate-500">Live aggregate counts</span>
+                    <span>Subject Inventory</span>
+                    
                   </div>
                   <table className="w-full text-left text-sm">
                     <thead className="bg-slate-50 text-slate-700 text-xs uppercase font-semibold border-b border-slate-200">
                       <tr>
                         <th className="px-6 py-3">Subject</th>
-                        <th className="px-6 py-3 text-slate-900 font-bold">Eligible Bank</th>
-                        <th className="px-6 py-3 text-slate-600">Under Review</th>
-                        <th className="px-6 py-3 text-slate-600">Under Moderation</th>
-                        <th className="px-6 py-3 text-slate-600">Examiner Drafts</th>
+                        <th className="px-6 py-3 text-slate-900 font-bold">Eligible</th>
+                        <th className="px-6 py-3 text-slate-600">In Review</th>
+                        <th className="px-6 py-3 text-slate-600">In Moderation</th>
+                        <th className="px-6 py-3 text-slate-600">Drafts</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -463,9 +452,9 @@ export const AdminGenerationPage: React.FC = () => {
                   <div className="inline-flex p-3 rounded-full bg-slate-100 text-slate-400 mb-1">
                     <Layers className="w-6 h-6" />
                   </div>
-                  <h3 className="text-sm font-bold text-slate-900">No Exam Blueprints Available</h3>
-                  <p className="text-xs text-slate-500 max-w-sm mx-auto font-mono">
-                    No approved exam blueprints were found in the database. Once proposed and authorized by dual administrators, blueprints will appear here with automated pool readiness calculations.
+                  <h3 className="text-sm font-bold text-slate-900">No Blueprints Available</h3>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                    No approved exam blueprints found.
                   </p>
                 </div>
               ) : (
@@ -489,7 +478,7 @@ export const AdminGenerationPage: React.FC = () => {
                     {readinessLoading && (
                       <div className="flex items-center gap-2 text-xs font-semibold text-red-600">
                         <Loader2 className="w-4 h-4 animate-spin text-red-600" />
-                        Calculating pool multiplier...
+                        Calculating readiness...
                       </div>
                     )}
                   </div>
@@ -499,9 +488,9 @@ export const AdminGenerationPage: React.FC = () => {
                       <div className="inline-flex p-3 rounded-full bg-red-50 text-red-600 mb-1">
                         <Loader2 className="w-6 h-6 animate-spin" />
                       </div>
-                      <h3 className="text-sm font-bold text-slate-900">Evaluating Blueprint Readiness...</h3>
-                      <p className="text-xs text-slate-500 max-w-sm mx-auto font-mono">
-                        Evaluating question bank pool against blueprint section constraints and quotas
+                      <h3 className="text-sm font-bold text-slate-900">Evaluating Readiness...</h3>
+                      <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                        Evaluating question bank pool against blueprint quotas.
                       </p>
                     </div>
                   )}
@@ -523,7 +512,7 @@ export const AdminGenerationPage: React.FC = () => {
                               : 'bg-amber-50 text-amber-800 border-amber-200'
                           }`}
                         >
-                          {readinessData.ready ? 'POOL READY (≥ 1.5x)' : 'POOL WARNING (< 1.5x)'}
+                          {readinessData.ready ? 'POOL READY' : 'POOL DEFICIT'}
                         </span>
                       </div>
 
@@ -533,8 +522,8 @@ export const AdminGenerationPage: React.FC = () => {
                           <thead className="bg-slate-50 text-slate-700 text-xs uppercase font-semibold border-b border-slate-200">
                             <tr>
                               <th className="px-4 py-3">Section</th>
-                              <th className="px-4 py-3">Required Questions</th>
-                              <th className="px-4 py-3">Eligible Pool</th>
+                              <th className="px-4 py-3">Required</th>
+                              <th className="px-4 py-3">Eligible</th>
                               <th className="px-4 py-3">Multiplier</th>
                               <th className="px-4 py-3">Status</th>
                             </tr>
@@ -578,7 +567,7 @@ export const AdminGenerationPage: React.FC = () => {
               <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs">
                 <h3 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
                   <Plus className="w-4 h-4 text-red-600" />
-                  Propose New Paper Generation Request (Step 1 of 2)
+                  Propose Generation Request
                 </h3>
                 <form onSubmit={handleCreateRequest} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -706,7 +695,7 @@ export const AdminGenerationPage: React.FC = () => {
                       className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 rounded-xl text-sm transition shadow-xs flex items-center justify-center gap-2"
                     >
                       {actionLoading && <Loader2 className="w-4 h-4 animate-spin text-white" />}
-                      Propose Generation Request (Step 1 of 2)
+                      Submit Request
                     </button>
                   </div>
                 </form>
@@ -715,8 +704,8 @@ export const AdminGenerationPage: React.FC = () => {
               {/* Existing Requests List */}
               <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
                 <div className="px-6 py-4 border-b border-slate-200 font-bold text-slate-900 flex items-center justify-between">
-                  <span>Active Generation Requests</span>
-                  <span className="text-xs font-normal text-slate-500">{requests.length} total request(s)</span>
+                  <span>Generation Requests</span>
+                  
                 </div>
                 <table className="w-full text-left text-sm">
                   <thead className="bg-slate-50 text-slate-700 text-xs uppercase font-semibold border-b border-slate-200">
@@ -732,7 +721,7 @@ export const AdminGenerationPage: React.FC = () => {
                     {requests.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="px-4 py-8 text-center text-xs text-slate-500">
-                          No active generation requests. Fill the form above to propose a new paper generation.
+                          No active generation requests.
                         </td>
                       </tr>
                     ) : (
@@ -791,11 +780,10 @@ export const AdminGenerationPage: React.FC = () => {
                   <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-slate-200">
                     <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                       <KeyRound className="w-5 h-5 text-red-600" />
-                      Dual-Admin Generation Approval
+                      Approve Generation Request
                     </h3>
                     <p className="text-xs text-slate-600 leading-relaxed">
-                      Dual-control policy requires a second distinct administrator to authorize paper generation.
-                      Step-up MFA and Ed25519 digital signature will seal this approval.
+                      Dual-control authorization required to schedule generation.
                     </p>
 
                     <div>
@@ -859,8 +847,8 @@ export const AdminGenerationPage: React.FC = () => {
             <div className="space-y-6">
               <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
                 <div className="px-6 py-4 border-b border-slate-200 font-bold text-slate-900 flex items-center justify-between">
-                  <span>Exam Papers Lifecycle & Delivery</span>
-                  <span className="text-xs font-normal text-slate-500">{papers.length} paper(s)</span>
+                  <span>Generated Papers</span>
+                  
                 </div>
 
                 {papers.length === 0 ? (
@@ -868,9 +856,9 @@ export const AdminGenerationPage: React.FC = () => {
                     <div className="inline-flex p-3 rounded-full bg-slate-100 text-slate-400 mb-1">
                       <FileText className="w-6 h-6" />
                     </div>
-                    <h4 className="text-sm font-bold text-slate-900">No Exam Papers Generated Yet</h4>
-                    <p className="text-xs text-slate-500 max-w-sm mx-auto font-mono">
-                      Exam papers are generated through dual-admin proposed requests in Tab 3. Once authorized by the second administrator and triggered, encrypted papers, Shamir key shares, and delivery manifests will appear here.
+                    <h4 className="text-sm font-bold text-slate-900">No Papers Generated</h4>
+                    <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                      Approved exam papers will appear here once generated.
                     </p>
                   </div>
                 ) : (
@@ -944,8 +932,8 @@ export const AdminGenerationPage: React.FC = () => {
                           <span>Threshold Share Status:</span>
                           <span className="font-semibold text-slate-900">
                             {p.status === 'RELEASED' || p.status === 'ANSWER_KEY_RELEASED'
-                              ? 'Threshold achieved (Key reconstructed & zeroized)'
-                              : 'Awaiting custodian shares at exam time gate'}
+                              ? 'Released'
+                              : 'Awaiting custodian shares'}
                           </span>
                         </div>
                       </div>

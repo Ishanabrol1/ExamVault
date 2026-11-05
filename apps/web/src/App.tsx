@@ -22,6 +22,8 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
+      staleTime: 60 * 1000, // 1 minute in-memory cache
+      gcTime: 5 * 60 * 1000,
       retry: 1,
     },
   },
@@ -215,18 +217,18 @@ const MainLayout: React.FC = () => {
       )}
 
       {/* Institutional Enterprise Footer */}
-      <footer className="border-t border-slate-200 bg-white py-5 mt-auto">
+      <footer className="border-t border-slate-200 bg-white py-4 mt-auto">
         <div className="w-full px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-3">
           <div className="flex items-center space-x-2">
-            <span className="flex items-center text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded font-mono font-medium">
+            <span className="flex items-center text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded font-medium">
               <Lock className="w-3 h-3 mr-1" />
-              AES-256-GCM + Ed25519
+              End-to-End Encrypted
             </span>
-            <span>Zero-Knowledge Envelope Encryption & Tamper-Evident Ledger</span>
+            <span>Institutional Examination Security & Tamper-Evident Ledger</span>
           </div>
           <div className="flex items-center space-x-2">
             <img src="/logo.png" alt="ExamVault" className="h-4 w-auto object-contain" />
-            <span>• Cryptographic Question Bank Core</span>
+            <span className="font-medium text-slate-600">ExamVault Institutional Core</span>
           </div>
         </div>
       </footer>

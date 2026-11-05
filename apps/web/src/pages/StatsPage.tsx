@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiRequest } from '../lib/api-client';
-import { BarChart3, PieChart, Layers, ShieldCheck, Target, Activity, Loader2, RefreshCw } from 'lucide-react';
+import { LoadingState } from '../components/LoadingState';
+import { BarChart3, PieChart, Layers, ShieldCheck, Target, Activity, RefreshCw } from 'lucide-react';
 
 interface BankStats {
   totalQuestions: number;
@@ -14,10 +15,12 @@ export const StatsPage: React.FC = () => {
   const [stats, setStats] = useState<BankStats | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchStats = async () => {
-    setLoading(true);
+  const fetchStats = async (bypass = false) => {
+    if (!stats) {
+      setLoading(true);
+    }
     try {
-      const res = await apiRequest<{ success: boolean; data: BankStats }>('/stats/bank');
+      const res = await apiRequest<{ success: boolean; data: BankStats }>('/stats/bank', { bypassCache: bypass });
       setStats(res.data);
     } catch (err) {
       console.error('Failed to load bank stats:', err);
@@ -32,14 +35,11 @@ export const StatsPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl border border-slate-200 p-16 text-center shadow-xs space-y-3 my-8">
-        <div className="inline-flex p-3 rounded-full bg-red-50 text-red-600 mb-1">
-          <Loader2 className="w-7 h-7 animate-spin" />
-        </div>
-        <h3 className="text-base font-bold text-slate-900">Computing Question Bank Analytics...</h3>
-        <p className="text-xs text-slate-500 max-w-md mx-auto font-mono">
-          Aggregating zero-leak metadata distributions across encrypted question partitions
-        </p>
+      <div className="my-8">
+        <LoadingState
+          title="Computing Question Bank Analytics..."
+          description="Aggregating metadata distributions across question partitions"
+        />
       </div>
     );
   }
@@ -52,18 +52,18 @@ export const StatsPage: React.FC = () => {
         <div>
           <div className="flex items-center space-x-2.5">
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-              Question Bank Analytics & Distribution
+              Question Bank Analytics
             </h1>
-            <span className="text-xs px-2.5 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200 font-mono font-medium">
-              Zero-Content Leak
+            <span className="text-xs px-2.5 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200 font-medium">
+              Analytics
             </span>
           </div>
           <p className="text-sm text-slate-600 mt-1">
-            Aggregate metadata distributions computed over blinded encrypted records. No question content or answers are revealed.
+            Aggregate distributions computed over encrypted question records.
           </p>
         </div>
         <button
-          onClick={fetchStats}
+          onClick={() => fetchStats(true)}
           disabled={loading}
           className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all disabled:opacity-50 self-start sm:self-center"
         >
@@ -79,8 +79,8 @@ export const StatsPage: React.FC = () => {
             <span>Total Encrypted Questions</span>
             <ShieldCheck className="w-4 h-4 text-slate-900" />
           </div>
-          <div className="text-3xl font-extrabold text-slate-900 mt-3 font-mono">{stats.totalQuestions}</div>
-          <p className="text-[11px] text-slate-500 mt-1">Stored with AES-256-GCM envelope encryption</p>
+          <div className="text-3xl font-extrabold text-slate-900 mt-3 ">{stats.totalQuestions}</div>
+          
         </div>
 
         <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
@@ -88,10 +88,10 @@ export const StatsPage: React.FC = () => {
             <span>Submitted & Locked</span>
             <Target className="w-4 h-4 text-emerald-600" />
           </div>
-          <div className="text-3xl font-extrabold text-emerald-600 mt-3 font-mono">
+          <div className="text-3xl font-extrabold text-emerald-600 mt-3 ">
             {stats.byStatus['SUBMITTED'] || 0}
           </div>
-          <p className="text-[11px] text-slate-500 mt-1">Immutable cryptographic commitments verified</p>
+          
         </div>
 
         <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
@@ -99,10 +99,10 @@ export const StatsPage: React.FC = () => {
             <span>Active Drafts</span>
             <Activity className="w-4 h-4 text-amber-600" />
           </div>
-          <div className="text-3xl font-extrabold text-amber-600 mt-3 font-mono">
+          <div className="text-3xl font-extrabold text-amber-600 mt-3 ">
             {stats.byStatus['DRAFT'] || 0}
           </div>
-          <p className="text-[11px] text-slate-500 mt-1">Under active authoring by examiners</p>
+          
         </div>
       </div>
 
@@ -124,7 +124,7 @@ export const StatsPage: React.FC = () => {
                 <div key={sub.subjectId} className="space-y-1">
                   <div className="flex justify-between text-xs font-semibold">
                     <span className="text-slate-800">{sub.subjectName}</span>
-                    <span className="text-slate-900 font-mono">
+                    <span className="text-slate-900 ">
                       {sub.count} ({percent.toFixed(1)}%)
                     </span>
                   </div>
@@ -157,7 +157,7 @@ export const StatsPage: React.FC = () => {
                 <div key={bucket.bucket} className="space-y-1">
                   <div className="flex justify-between text-xs font-semibold">
                     <span className="text-slate-800">{bucket.bucket}</span>
-                    <span className="text-slate-900 font-mono">
+                    <span className="text-slate-900 ">
                       {bucket.count} ({percent.toFixed(1)}%)
                     </span>
                   </div>
@@ -186,9 +186,9 @@ export const StatsPage: React.FC = () => {
             const percent = stats.totalQuestions > 0 ? (count / stats.totalQuestions) * 100 : 0;
             return (
               <div key={type} className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-                <span className="text-xs font-mono font-bold text-slate-600 uppercase tracking-wider">{type.replace('_', ' ')}</span>
-                <div className="text-2xl font-bold text-slate-900 mt-1 font-mono">{count}</div>
-                <div className="text-xs text-red-600 mt-1 font-mono font-semibold">{percent.toFixed(1)}% of total vault</div>
+                <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">{type.replace('_', ' ')}</span>
+                <div className="text-2xl font-bold text-slate-900 mt-1 ">{count}</div>
+                <div className="text-xs text-red-600 mt-1 font-semibold">{percent.toFixed(1)}% of total vault</div>
               </div>
             );
           })}

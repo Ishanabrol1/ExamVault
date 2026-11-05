@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { apiRequest } from '../lib/api-client';
 import { ModalPortal } from '../components/ModalPortal';
+import { LoadingState } from '../components/LoadingState';
 import {
   ShieldCheck,
   CheckCircle2,
@@ -137,7 +138,7 @@ export const AdminPoliciesPage: React.FC = () => {
       });
       if (data.success) {
         setSuccessMsg(
-          'Policy proposed successfully! Strict Two-Person Rule: A second administrator must log in and approve this proposal before it takes effect.'
+          'Policy proposed. A 2nd administrator must approve it to activate.'
         );
         setShowProposeModal(false);
         fetchPolicies();
@@ -161,10 +162,10 @@ export const AdminPoliciesPage: React.FC = () => {
         body: JSON.stringify({ policyId }),
       });
       if (data.success) {
-        setSuccessMsg('Policy approved and enacted across all subsequent review rounds!');
+        setSuccessMsg('Policy approved and activated!');
         fetchPolicies();
       } else {
-        setError('Approval failed (Strict Two-Person Rule: proposer cannot approve own policy proposal)');
+        setError('Approval failed (proposer cannot approve their own policy)');
       }
     } catch (e: any) {
       setError(e.message);
@@ -197,7 +198,7 @@ export const AdminPoliciesPage: React.FC = () => {
         }),
       });
       if (data.success) {
-        setSuccessMsg('Corpus documents imported and indexed in originality engine!');
+        setSuccessMsg('Corpus document indexed successfully!');
         setCorpusDocText('');
         setCorpusDocTitle('');
         fetchCorpus();
@@ -216,32 +217,31 @@ export const AdminPoliciesPage: React.FC = () => {
   const isCurrentAdminProposer = pendingProposal && pendingProposal.proposedById === user?.id;
 
   return (
-    <div className="w-full space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-xs">
+    <div className="w-full space-y-5">
+      {/* Page Header - Minimal */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-6 rounded-2xl border border-slate-200 shadow-xs">
         <div>
           <div className="flex items-center space-x-2 mb-1">
             <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-red-50 text-red-700 border border-red-200">
-              Cryptographic Core
+              Governance
             </span>
-            <span className="text-xs text-slate-400 font-mono">GOVERNANCE & AUDIT</span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Institutional Policy & Corpus Engine</h1>
-          <p className="text-sm text-slate-500">
-            Configure versioned approval workflows with two-person rule enforcement, originality screening, and reference corpora.
+          <h1 className="text-xl font-bold text-slate-900 tracking-tight">Policies & Corpus</h1>
+          <p className="text-xs text-slate-500">
+            Approval workflows, difficulty calibration, and reference corpora.
           </p>
         </div>
         <div className="flex items-center space-x-2 shrink-0">
-          <span className="flex items-center text-xs font-mono bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-md font-medium">
+          <span className="flex items-center text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-md font-medium">
             <Lock className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
-            Dual-Person Admin Control Active
+            Dual-Admin Enforced
           </span>
         </div>
       </div>
 
       {/* Global Alerts */}
       {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800 flex items-center justify-between">
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-800 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
             <span>{error}</span>
@@ -253,7 +253,7 @@ export const AdminPoliciesPage: React.FC = () => {
       )}
 
       {successMsg && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-sm text-emerald-800 flex items-center justify-between">
+        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-800 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
             <span>{successMsg}</span>
@@ -264,12 +264,12 @@ export const AdminPoliciesPage: React.FC = () => {
         </div>
       )}
 
-      {/* Sub Tabs */}
+      {/* Sub Tabs - Clean & Concise */}
       <div className="flex border-b border-slate-200 space-x-6">
         {[
-          { key: 'policies', label: 'Approval Policies (Dual-Control)', icon: ShieldCheck },
-          { key: 'originality', label: 'Originality Service Health', icon: Activity },
-          { key: 'corpus', label: 'Past Papers & Public Corpus', icon: Database },
+          { key: 'policies', label: 'Approval Policies', icon: ShieldCheck },
+          { key: 'originality', label: 'Originality Engine', icon: Activity },
+          { key: 'corpus', label: 'Reference Corpus', icon: Database },
         ].map((tab) => {
           const Icon = tab.icon;
           const isActive = activeSubTab === tab.key;
@@ -277,13 +277,13 @@ export const AdminPoliciesPage: React.FC = () => {
             <button
               key={tab.key}
               onClick={() => setActiveSubTab(tab.key as any)}
-              className={`flex items-center space-x-2 py-3 border-b-2 font-medium text-sm transition-all ${
+              className={`flex items-center space-x-2 py-2.5 border-b-2 font-medium text-xs transition-all ${
                 isActive
                   ? 'border-red-600 text-slate-900 font-bold'
                   : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
               }`}
             >
-              <Icon className={`w-4 h-4 ${isActive ? 'text-red-600' : 'text-slate-400'}`} />
+              <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-red-600' : 'text-slate-400'}`} />
               <span>{tab.label}</span>
             </button>
           );
@@ -292,225 +292,197 @@ export const AdminPoliciesPage: React.FC = () => {
 
       {/* Tab 1: Policies Content */}
       {activeSubTab === 'policies' && (
-        <div className="space-y-5">
-          {/* 1. Pending Proposal Notice Banner (if any proposal is awaiting 2nd admin) */}
+        <div className="space-y-4">
+          {/* 1. Pending Proposal Notice Banner - Minimal */}
           {pendingProposal && (
-            <div className="p-4 bg-amber-50/80 border border-amber-300 rounded-xl shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="flex items-start space-x-3">
-                <div className="p-2 bg-amber-100 rounded-lg text-amber-800 mt-0.5 shrink-0">
-                  <AlertTriangle className="w-5 h-5 text-amber-700" />
+            <div className="p-3.5 bg-amber-50/90 border border-amber-300 rounded-xl shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+              <div className="flex items-center space-x-3">
+                <div className="p-1.5 bg-amber-100 rounded-lg text-amber-800 shrink-0">
+                  <AlertTriangle className="w-4 h-4 text-amber-700" />
                 </div>
                 <div>
                   <div className="flex items-center space-x-2">
-                    <span className="font-bold text-sm text-amber-950">
-                      Pending Policy Proposal v{pendingProposal.version}: {pendingProposal.requiredReviewers} Reviewer{pendingProposal.requiredReviewers > 1 ? 's' : ''} (±{pendingProposal.difficultyTolerance}pt Tolerance)
+                    <span className="font-bold text-xs text-amber-950">
+                      Pending Proposal v{pendingProposal.version} ({pendingProposal.requiredReviewers} Reviewers, ±{pendingProposal.difficultyTolerance}pts)
                     </span>
-                    <span className="text-[10px] font-mono uppercase bg-amber-200/70 text-amber-900 px-2 py-0.5 rounded font-bold border border-amber-300">
+                    <span className="text-[10px] font-semibold bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded font-bold border border-amber-300">
                       Awaiting 2nd Admin
                     </span>
                   </div>
-                  <p className="text-xs text-amber-800 mt-1 leading-relaxed">
-                    Proposed by <strong>{pendingProposal.proposedBy?.name || 'System Administrator'}</strong>. Strict Two-Person Rule requires an independent second administrator to verify and approve before taking effect.
-                  </p>
-                  <div className="flex items-center space-x-4 mt-2 text-[11px] text-amber-900 font-mono">
+                  <div className="flex items-center space-x-3 text-[11px] text-amber-800 mt-0.5 font-medium">
+                    <span>By {pendingProposal.proposedBy?.name || 'Admin'}</span>
+                    <span>•</span>
                     <span>SLA: {pendingProposal.maxReviewDays}d</span>
                     <span>•</span>
-                    <span>Blind Solve: {pendingProposal.requireBlindSolve ? 'Enforced' : 'Off'}</span>
+                    <span>Blind Solve: {pendingProposal.requireBlindSolve ? 'Yes' : 'No'}</span>
                     <span>•</span>
-                    <span>Moderator Sign-off: {pendingProposal.requireModerator ? 'Required' : 'Off'}</span>
+                    <span>Moderator: {pendingProposal.requireModerator ? 'Yes' : 'No'}</span>
                   </div>
                 </div>
               </div>
 
               <div className="shrink-0 flex items-center">
                 {isCurrentAdminProposer ? (
-                  <div className="px-3.5 py-2 bg-amber-100/90 text-amber-900 border border-amber-300 rounded-lg text-xs font-semibold flex items-center space-x-1.5 shadow-xs">
+                  <div className="px-3 py-1.5 bg-amber-100 text-amber-900 border border-amber-300 rounded-lg text-xs font-semibold flex items-center space-x-1.5">
                     <Lock className="w-3.5 h-3.5 text-amber-700" />
-                    <span>You proposed this — Awaiting 2nd Admin</span>
+                    <span>Awaiting 2nd Admin</span>
                   </div>
                 ) : (
                   <button
                     type="button"
                     disabled={actionLoading}
                     onClick={() => handleApprovePolicy(pendingProposal.id)}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-sm transition-colors flex items-center space-x-2 text-xs"
+                    className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-xs transition-colors flex items-center space-x-1.5 text-xs"
                   >
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>Approve Proposal as 2nd Admin</span>
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Approve Proposal</span>
                   </button>
                 )}
               </div>
             </div>
           )}
 
-          {/* 2. Active Policy Overview Banner */}
+          {/* 2. Active Policy Overview Banner - Minimal */}
           {activePolicy && (
-            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs relative overflow-hidden">
-              <div className="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-slate-100 gap-3">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-black text-white rounded-lg">
-                    <ShieldCheck className="w-5 h-5 text-red-500" />
+            <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs relative overflow-hidden">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2">
+                <div className="flex items-center space-x-2.5">
+                  <div className="p-1.5 bg-black text-white rounded-lg">
+                    <ShieldCheck className="w-4 h-4 text-red-500" />
                   </div>
                   <div>
                     <div className="flex items-center space-x-2">
-                      <h3 className="text-sm font-bold text-slate-900">
+                      <h3 className="text-xs font-bold text-slate-900">
                         Active Governance Policy (v{activePolicy.version})
                       </h3>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-semibold border border-slate-200">
-                        {activePolicy.subject?.name || 'Global Institutional Scope'}
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-semibold border border-slate-200">
+                        {activePolicy.subject?.name || 'Global'}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-500">
-                      Currently enforced approval rules and difficulty calibration thresholds for all authoring rounds.
-                    </p>
                   </div>
                 </div>
 
                 <div className="flex items-center space-x-2">
-                  <span className="inline-flex items-center text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-md">
-                    <CheckCircle2 className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
+                  <span className="inline-flex items-center text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-md">
+                    <CheckCircle2 className="w-3.5 h-3.5 mr-1 text-emerald-600" />
                     Active (Dual-Approved)
                   </span>
                 </div>
               </div>
 
-              {/* Grid of Key Enforced Rules */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
-                <div className="p-3 bg-slate-50 rounded-lg border border-slate-200/80 space-y-1">
-                  <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">
+              {/* Grid of Key Enforced Rules - Minimal */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-3">
+                <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200/80 space-y-0.5">
+                  <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">
                     Review Protocol
                   </span>
-                  <div className="text-sm font-bold text-slate-900 flex items-center space-x-1.5">
-                    <Users className="w-4 h-4 text-red-600 shrink-0" />
+                  <div className="text-xs font-bold text-slate-900 flex items-center space-x-1.5">
+                    <Users className="w-3.5 h-3.5 text-red-600 shrink-0" />
                     <span>
-                      {activePolicy.requiredReviewers === 1
-                        ? '1 Reviewer (Fast-Track)'
-                        : `${activePolicy.requiredReviewers} Reviewers (Consensus)`}
+                      {activePolicy.requiredReviewers === 1 ? '1 Reviewer (Fast-Track)' : `${activePolicy.requiredReviewers} Reviewers`}
                     </span>
                   </div>
-                  <span className="text-[11px] text-slate-500 block leading-tight">
-                    {activePolicy.requiredReviewers === 1
-                      ? 'Direct Question Bank admission on answer match'
-                      : 'Dual blind solve with difficulty consensus'}
-                  </span>
                 </div>
 
-                <div className="p-3 bg-slate-50 rounded-lg border border-slate-200/80 space-y-1">
-                  <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">
+                <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200/80 space-y-0.5">
+                  <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">
                     Difficulty Tolerance
                   </span>
-                  <div className="text-sm font-bold text-slate-900 flex items-center space-x-1.5">
-                    <Scale className="w-4 h-4 text-red-600 shrink-0" />
+                  <div className="text-xs font-bold text-slate-900 flex items-center space-x-1.5">
+                    <Scale className="w-3.5 h-3.5 text-red-600 shrink-0" />
                     <span>±{activePolicy.difficultyTolerance} Points</span>
                   </div>
-                  <span className="text-[11px] text-slate-500 block leading-tight">
-                    Ratings within tolerance auto-promote without moderator
-                  </span>
                 </div>
 
-                <div className="p-3 bg-slate-50 rounded-lg border border-slate-200/80 space-y-1">
-                  <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">
-                    Review SLA Limit
+                <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200/80 space-y-0.5">
+                  <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">
+                    Turnaround SLA
                   </span>
-                  <div className="text-sm font-bold text-slate-900 flex items-center space-x-1.5">
-                    <Clock className="w-4 h-4 text-red-600 shrink-0" />
+                  <div className="text-xs font-bold text-slate-900 flex items-center space-x-1.5">
+                    <Clock className="w-3.5 h-3.5 text-red-600 shrink-0" />
                     <span>{activePolicy.maxReviewDays} Days Max</span>
                   </div>
-                  <span className="text-[11px] text-slate-500 block leading-tight">
-                    Blind solve turnaround SLA before escalation
-                  </span>
                 </div>
 
-                <div className="p-3 bg-slate-50 rounded-lg border border-slate-200/80 space-y-1">
-                  <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">
-                    Dual-Control Status
+                <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200/80 space-y-0.5">
+                  <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">
+                    Dual-Control Sign-off
                   </span>
-                  <div className="text-sm font-bold text-slate-900 flex items-center space-x-1.5">
-                    <Lock className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>Two-Person Signed</span>
+                  <div className="text-xs font-bold text-slate-900 flex items-center space-x-1.5">
+                    <Lock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span className="truncate" title={activePolicy.approvedBy?.name || 'Admin'}>
+                      {activePolicy.approvedBy?.name || 'Admin'}
+                    </span>
                   </div>
-                  <span className="text-[11px] text-slate-500 block leading-tight truncate" title={`Approved by: ${activePolicy.approvedBy?.name || 'Administrator'}`}>
-                    Approved by {activePolicy.approvedBy?.name || 'Administrator'}
-                  </span>
                 </div>
               </div>
 
-              {/* Badges of Enforced Checks */}
-              <div className="flex flex-wrap items-center gap-2 pt-3 mt-3 border-t border-slate-100 text-[11px]">
-                <span className="text-slate-400 font-mono text-[10px] uppercase font-bold mr-1">Enforcements:</span>
+              {/* Compact Badges */}
+              <div className="flex flex-wrap items-center gap-1.5 pt-2.5 mt-2.5 border-t border-slate-100 text-[10px]">
                 <span className={`px-2 py-0.5 rounded font-medium ${activePolicy.requireBlindSolve ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500'}`}>
-                  Blind Solve: {activePolicy.requireBlindSolve ? 'Enforced' : 'Off'}
+                  Blind Solve: {activePolicy.requireBlindSolve ? 'On' : 'Off'}
                 </span>
                 <span className={`px-2 py-0.5 rounded font-medium ${activePolicy.requireModerator ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500'}`}>
-                  Moderator Sign-off: {activePolicy.requireModerator ? 'Required' : 'Off'}
+                  Moderator: {activePolicy.requireModerator ? 'Required' : 'Off'}
                 </span>
                 <span className={`px-2 py-0.5 rounded font-medium ${activePolicy.requireLanguageReview ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500'}`}>
-                  Bilingual Translation Check: {activePolicy.requireLanguageReview ? 'Enforced' : 'Off'}
+                  Translation Parity: {activePolicy.requireLanguageReview ? 'On' : 'Off'}
                 </span>
-                <span className="px-2 py-0.5 rounded font-medium bg-slate-100 text-slate-600 font-mono">
-                  Similarity Cutoff: High ≥ {(activePolicy.highSimilarityThreshold * 100).toFixed(0)}% | Med ≥ {(activePolicy.mediumSimilarityThreshold * 100).toFixed(0)}%
+                <span className="px-2 py-0.5 rounded font-medium bg-slate-100 text-slate-600 font-medium">
+                  Cutoff: High ≥ {(activePolicy.highSimilarityThreshold * 100).toFixed(0)}% · Med ≥ {(activePolicy.mediumSimilarityThreshold * 100).toFixed(0)}%
                 </span>
               </div>
             </div>
           )}
 
-          {/* Action Row */}
-          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 pt-1">
+          {/* Action Row - Minimal */}
+          <div className="flex justify-between items-center pt-1">
             <div>
-              <h2 className="text-sm font-bold text-slate-900">Policy Governance Registry</h2>
-              <p className="text-xs text-slate-500">
-                Policies define reviewer thresholds and workflow requirements. Two distinct administrators are strictly required to enact any policy.
-              </p>
+              <h2 className="text-xs font-bold text-slate-900">Policy Registry</h2>
             </div>
             <div className="flex items-center space-x-2 shrink-0">
               <button
                 type="button"
                 onClick={fetchPolicies}
                 disabled={policiesLoading}
-                className="inline-flex items-center space-x-1.5 px-3 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg shadow-xs transition-colors disabled:opacity-50"
+                className="inline-flex items-center space-x-1 px-2.5 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg shadow-xs transition-colors disabled:opacity-50"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${policiesLoading ? 'animate-spin text-red-600' : ''}`} />
-                <span>{policiesLoading ? 'Refreshing...' : 'Refresh'}</span>
+                <RefreshCw className={`w-3 h-3 ${policiesLoading ? 'animate-spin text-red-600' : ''}`} />
+                <span>{policiesLoading ? '...' : 'Refresh'}</span>
               </button>
               <button
                 type="button"
                 onClick={() => setShowProposeModal(true)}
-                className="inline-flex items-center space-x-2 px-4 py-2 bg-black hover:bg-neutral-800 text-white text-xs font-bold rounded-lg shadow-xs transition-colors border border-black"
+                className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-black hover:bg-neutral-800 text-white text-xs font-bold rounded-lg shadow-xs transition-colors border border-black"
               >
-                <Plus className="w-4 h-4 text-white" />
-                <span>Propose New Policy</span>
+                <Plus className="w-3.5 h-3.5 text-white" />
+                <span>Propose Policy</span>
               </button>
             </div>
           </div>
 
-          {/* Policies Table */}
+          {/* Policies Table - Concise */}
           {policiesLoading ? (
-            <div className="bg-white border border-slate-200 rounded-xl p-12 text-center shadow-xs space-y-3">
-              <div className="inline-flex p-3 rounded-full bg-red-50 text-red-600 mb-1">
-                <Loader2 className="w-6 h-6 animate-spin" />
-              </div>
-              <h3 className="text-sm font-bold text-slate-900">Loading Governance Policies...</h3>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto font-mono">
-                Fetching dual-control governance policies, reviewer thresholds, and active version constraints
-              </p>
-            </div>
+            <LoadingState
+              title="Loading Governance Policies..."
+              description="Fetching dual-control governance policies, reviewer thresholds, and active version constraints"
+            />
           ) : policies.length === 0 ? (
-            <div className="bg-white border border-slate-200 rounded-xl p-12 text-center text-slate-500 text-xs shadow-xs space-y-2">
-              <ShieldCheck className="w-10 h-10 text-slate-300 mx-auto" />
-              <p className="font-semibold text-slate-700">No Institutional Policies Found</p>
-              <p className="text-[11px] text-slate-400">Click &quot;Propose New Policy&quot; above to create a dual-control workflow rule.</p>
+            <div className="bg-white border border-slate-200 rounded-xl p-8 text-center text-slate-500 text-xs shadow-xs space-y-1">
+              <ShieldCheck className="w-8 h-8 text-slate-300 mx-auto" />
+              <p className="font-semibold text-slate-700">No Policies Found</p>
             </div>
           ) : (
             <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
-              <table className="w-full text-left text-sm text-slate-600">
-                <thead className="bg-slate-100 text-xs uppercase font-bold text-slate-700 border-b border-slate-200">
+              <table className="w-full text-left text-xs text-slate-600">
+                <thead className="bg-slate-100 text-[11px] uppercase font-bold text-slate-700 border-b border-slate-200">
                   <tr>
-                    <th className="px-6 py-4">Version & Scope</th>
-                    <th className="px-6 py-4">Reviewer Protocol</th>
-                    <th className="px-6 py-4">Difficulty & SLA</th>
-                    <th className="px-6 py-4">Security Enforcements</th>
-                    <th className="px-6 py-4">Dual-Control Status</th>
-                    <th className="px-6 py-4 text-right">Action</th>
+                    <th className="px-5 py-3">Version</th>
+                    <th className="px-5 py-3">Protocol</th>
+                    <th className="px-5 py-3">Tolerance & SLA</th>
+                    <th className="px-5 py-3">Enforcements</th>
+                    <th className="px-5 py-3">Status</th>
+                    <th className="px-5 py-3 text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -518,68 +490,59 @@ export const AdminPoliciesPage: React.FC = () => {
                     const isProposer = p.proposedById === user?.id;
                     return (
                       <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="px-6 py-4 font-mono font-medium text-slate-900">
+                        <td className="px-5 py-3 font-semibold text-slate-900">
                           <div className="flex items-center space-x-1.5">
                             <span className="font-bold">v{p.version}</span>
                             {p.isActive && (
-                              <span className="w-2 h-2 rounded-full bg-emerald-500" title="Active Policy" />
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" title="Active Policy" />
                             )}
                           </div>
-                          <span className="text-xs text-slate-400 block font-sans">
-                            {p.subject?.name || 'Global Policy'}
-                          </span>
-                          <span className="text-[10px] text-slate-400 block font-sans">
-                            By {p.proposedBy?.name || 'Admin'}
+                          <span className="text-[11px] text-slate-400 block font-sans">
+                            {p.subject?.name || 'Global'} · By {p.proposedBy?.name || 'Admin'}
                           </span>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-5 py-3">
                           <span className="font-bold text-xs text-slate-900 block">
-                            {p.requiredReviewers === 1 ? '1 Reviewer (Fast-Track)' : `${p.requiredReviewers} Reviewers (Consensus)`}
-                          </span>
-                          <span className="text-[11px] text-slate-500 block">
-                            {p.requiredReviewers === 1 ? 'Direct Bank Admission' : 'Consensus Calibration'}
+                            {p.requiredReviewers === 1 ? '1 Reviewer' : `${p.requiredReviewers} Reviewers`}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-xs font-mono space-y-0.5">
+                        <td className="px-5 py-3 space-y-0.5">
                           <span className="block font-semibold text-slate-800">
-                            Tolerance: ±{p.difficultyTolerance} pts
+                            ±{p.difficultyTolerance} pts
+                          </span>
+                          <span className="block text-slate-500 text-[11px]">
+                            {p.maxReviewDays}d SLA
+                          </span>
+                        </td>
+                        <td className="px-5 py-3 text-[11px] space-y-0.5">
+                          <span className="block text-slate-700">
+                            Blind Solve: {p.requireBlindSolve ? 'On' : 'Off'} · Mod: {p.requireModerator ? 'Yes' : 'No'}
                           </span>
                           <span className="block text-slate-500">
-                            SLA: {p.maxReviewDays} Days max
+                            Cutoff: ≥{(p.highSimilarityThreshold * 100).toFixed(0)}%
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-xs space-y-0.5">
-                          <span className="block text-slate-700">
-                            Blind Solve: <strong className={p.requireBlindSolve ? 'text-slate-900' : 'text-slate-400'}>{p.requireBlindSolve ? 'Enforced' : 'Off'}</strong>
-                          </span>
-                          <span className="block text-slate-700">
-                            Moderator: <strong className={p.requireModerator ? 'text-slate-900' : 'text-slate-400'}>{p.requireModerator ? 'Required' : 'Off'}</strong>
-                          </span>
-                          <span className="block text-slate-500 font-mono text-[11px]">
-                            Sim: ≥{(p.highSimilarityThreshold * 100).toFixed(0)}% High
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
+                        <td className="px-5 py-3">
                           {p.isActive ? (
-                            <span className="inline-flex items-center text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md">
-                              <CheckCircle2 className="w-3.5 h-3.5 mr-1 text-emerald-600" />
-                              Active (Dual-Approved)
+                            <span className="inline-flex items-center text-[11px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
+                              <CheckCircle2 className="w-3 h-3 mr-1 text-emerald-600" />
+                              Active
                             </span>
                           ) : (
-                            <span className="inline-flex items-center text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-300 px-2.5 py-1 rounded-md">
-                              <AlertTriangle className="w-3.5 h-3.5 mr-1 text-amber-600" />
+                            <span className="inline-flex items-center text-[11px] font-semibold text-amber-800 bg-amber-50 border border-amber-300 px-2 py-0.5 rounded">
+                              <AlertTriangle className="w-3 h-3 mr-1 text-amber-600" />
                               Pending 2nd Admin
                             </span>
                           )}
                         </td>
-                        <td className="px-6 py-4 text-right">
+                        <td className="px-5 py-3 text-right">
                           {!p.isActive ? (
                             isProposer ? (
                               <span
-                                className="inline-flex items-center text-[11px] font-mono font-medium text-amber-900 bg-amber-100/70 border border-amber-200 px-2.5 py-1 rounded-md"
-                                title="Dual-control enforcement: You proposed this policy and cannot approve it yourself"
+                                className="inline-flex items-center text-[10px] font-semibold text-amber-900 bg-amber-100/70 border border-amber-200 px-2 py-0.5 rounded"
+                                title="Dual-control: 2nd admin approval required"
                               >
-                                <Lock className="w-3 h-3 mr-1 text-amber-700" />
+                                <Lock className="w-2.5 h-2.5 mr-1 text-amber-700" />
                                 Awaiting 2nd Admin
                               </span>
                             ) : (
@@ -587,15 +550,15 @@ export const AdminPoliciesPage: React.FC = () => {
                                 type="button"
                                 disabled={actionLoading}
                                 onClick={() => handleApprovePolicy(p.id)}
-                                className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm transition-colors"
+                                className="inline-flex items-center space-x-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold rounded shadow-xs transition-colors"
                               >
-                                <CheckCircle2 className="w-3.5 h-3.5" />
-                                <span>Approve Policy</span>
+                                <CheckCircle2 className="w-3 h-3" />
+                                <span>Approve</span>
                               </button>
                             )
                           ) : (
-                            <span className="text-xs font-mono text-slate-400">
-                              Enacted & Active
+                            <span className="text-[11px] text-slate-400">
+                              Enacted
                             </span>
                           )}
                         </td>
@@ -609,184 +572,170 @@ export const AdminPoliciesPage: React.FC = () => {
         </div>
       )}
 
-      {/* Tab 2: Originality Service Health */}
+      {/* Tab 2: Originality Service Health - Minimal */}
       {activeSubTab === 'originality' && (
-        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-6">
-          <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <div>
-              <h3 className="text-base font-bold text-slate-900">Originality Microservice Telemetry</h3>
+              <h3 className="text-sm font-bold text-slate-900">Originality Microservice</h3>
               <p className="text-xs text-slate-500">
-                Isolated Python FastAPI service running MinHash LSH, TF-IDF, and Devanagari normalizer.
+                MinHash LSH, TF-IDF, and Devanagari normalization status.
               </p>
             </div>
             <button
               onClick={fetchOriginalityHealth}
               disabled={originalityLoading}
-              className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg shadow-xs transition-colors disabled:opacity-50"
+              className="inline-flex items-center space-x-1 px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg shadow-xs transition-colors disabled:opacity-50"
             >
-              {originalityLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-red-600" />}
-              <span>{originalityLoading ? 'Pinging...' : 'Ping Service'}</span>
+              {originalityLoading && <Loader2 className="w-3 h-3 animate-spin text-red-600" />}
+              <span>{originalityLoading ? 'Pinging...' : 'Ping'}</span>
             </button>
           </div>
 
           {originalityLoading && !originalityHealth ? (
-            <div className="py-12 text-center space-y-3">
-              <div className="inline-flex p-3 rounded-full bg-red-50 text-red-600 mb-1">
-                <Loader2 className="w-6 h-6 animate-spin" />
-              </div>
-              <h4 className="text-sm font-bold text-slate-900">Querying Originality Microservice...</h4>
-              <p className="text-xs text-slate-500 font-mono">Pinging isolated Python engine health and memory-only index status</p>
-            </div>
+            <LoadingState
+              title="Querying Originality Microservice..."
+              description="Pinging isolated Python engine telemetry and in-memory index status"
+            />
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-1">
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Service Status</span>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 space-y-1">
+                <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">Status</span>
                 <div className="flex items-center space-x-2">
                   <span
-                    className={`w-3 h-3 rounded-full ${
+                    className={`w-2.5 h-2.5 rounded-full ${
                       originalityHealth?.available ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'
                     }`}
                   />
-                  <span className={`font-bold font-mono text-sm ${originalityHealth?.available ? 'text-emerald-700' : 'text-red-700'}`}>
-                    {originalityHealth?.available ? 'ONLINE & RESPONSIVE' : 'OFFLINE / UNREACHABLE'}
+                  <span className={`font-bold text-xs ${originalityHealth?.available ? 'text-emerald-700' : 'text-red-700'}`}>
+                    {originalityHealth?.available ? 'ONLINE' : 'OFFLINE'}
                   </span>
                 </div>
               </div>
 
-              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-1">
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
-                  Memory-Only Index
+              <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 space-y-0.5">
+                <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">
+                  RAM Index
                 </span>
-                <span className="text-2xl font-bold font-mono text-slate-900">
+                <span className="text-xl font-bold text-slate-900 block">
                   {originalityHealth?.indexedDocumentsCount ?? 210} items
                 </span>
-                <span className="text-[10px] text-slate-400 block">Bank questions live in RAM (Never written to disk)</span>
+                <span className="text-[10px] text-slate-400 block">In-memory only</span>
               </div>
 
-              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-1">
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
+              <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 space-y-0.5">
+                <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">
                   Network Isolation
                 </span>
-                <div className="flex items-center space-x-1.5 text-xs text-emerald-700 font-mono font-bold">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                  <span>Zero Outbound Internet</span>
+                <div className="flex items-center space-x-1.5 text-xs text-emerald-700 font-bold">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Internal Network</span>
                 </div>
-                <span className="text-[10px] text-slate-400 block">Docker network internal: true enforced</span>
+                <span className="text-[10px] text-slate-400 block">Zero outbound internet</span>
               </div>
             </div>
           )}
         </div>
       )}
 
-      {/* Tab 3: Past Papers & Public Corpus Import */}
+      {/* Tab 3: Past Papers & Reference Corpus - Minimal */}
       {activeSubTab === 'corpus' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-6 bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-4">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          <div className="lg:col-span-6 bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-3">
             <div className="pb-2 border-b border-slate-100">
-              <h3 className="text-base font-bold text-slate-900">Import Past Paper / Reference Corpus</h3>
+              <h3 className="text-sm font-bold text-slate-900">Import Reference Item</h3>
               <p className="text-xs text-slate-500">
-                Load official past exam papers or permitted public reference questions into the screening corpus.
+                Add past papers or public questions into the screening corpus.
               </p>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">Corpus Source Title</label>
+                <label className="text-[11px] font-semibold text-slate-700 block mb-0.5">Corpus Title</label>
                 <input
                   type="text"
                   value={corpusName}
                   onChange={(e) => setCorpusName(e.target.value)}
                   placeholder="e.g. JEE Advanced 2021 Paper 1"
-                  className="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900"
+                  className="w-full text-xs p-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:ring-slate-900"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">Source Category</label>
+                <label className="text-[11px] font-semibold text-slate-700 block mb-0.5">Category</label>
                 <select
                   value={corpusType}
                   onChange={(e) => setCorpusType(e.target.value)}
-                  className="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900"
+                  className="w-full text-xs p-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:ring-slate-900"
                 >
                   <option value="PAST_PAPER">Past Paper Archives</option>
-                  <option value="PUBLIC_SOURCE">Permitted Public Textbook / Exemplar</option>
+                  <option value="PUBLIC_SOURCE">Permitted Public Textbook</option>
                 </select>
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">Question Identifier / Code</label>
+                <label className="text-[11px] font-semibold text-slate-700 block mb-0.5">Question Code</label>
                 <input
                   type="text"
                   value={corpusDocTitle}
                   onChange={(e) => setCorpusDocTitle(e.target.value)}
                   placeholder="e.g. JEE-2021-P1-Q12"
-                  className="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900"
+                  className="w-full text-xs p-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:ring-slate-900"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">Question Text Content</label>
+                <label className="text-[11px] font-semibold text-slate-700 block mb-0.5">Question Text</label>
                 <textarea
-                  rows={4}
+                  rows={3}
                   value={corpusDocText}
                   onChange={(e) => setCorpusDocText(e.target.value)}
-                  placeholder="Paste question stem, options, and numbers here..."
-                  className="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900"
+                  placeholder="Paste question text here..."
+                  className="w-full text-xs p-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:ring-slate-900"
                 />
               </div>
 
               <button
                 disabled={actionLoading || !corpusName.trim() || !corpusDocText.trim()}
                 onClick={handleAddCorpusDoc}
-                className="w-full py-2.5 bg-black hover:bg-neutral-800 disabled:bg-slate-300 text-white text-xs font-bold rounded-lg shadow-xs transition-colors inline-flex items-center justify-center space-x-2 border border-black"
+                className="w-full py-2 bg-black hover:bg-neutral-800 disabled:bg-slate-300 text-white text-xs font-bold rounded-lg shadow-xs transition-colors inline-flex items-center justify-center space-x-1.5 border border-black"
               >
-                {actionLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />}
-                <span>{actionLoading ? 'Indexing Document into Originality Engine...' : 'Index Document in Originality Engine'}</span>
+                {actionLoading && <Loader2 className="w-3 h-3 animate-spin text-white" />}
+                <span>{actionLoading ? 'Indexing...' : 'Index in Screening Engine'}</span>
               </button>
             </div>
           </div>
 
-          <div className="lg:col-span-6 bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-4">
+          <div className="lg:col-span-6 bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-3">
             <div className="pb-2 border-b border-slate-100 flex items-center justify-between">
               <div>
-                <h3 className="text-base font-bold text-slate-900">Loaded Corpus Sources</h3>
-                <p className="text-xs text-slate-500">
-                  Corpora active in the screening index.
-                </p>
+                <h3 className="text-sm font-bold text-slate-900">Loaded Corpora</h3>
               </div>
               <button
                 onClick={fetchCorpus}
                 disabled={corpusLoading}
-                className="inline-flex items-center space-x-1.5 px-2.5 py-1 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors disabled:opacity-50"
+                className="inline-flex items-center space-x-1 px-2 py-0.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded transition-colors disabled:opacity-50"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${corpusLoading ? 'animate-spin text-red-600' : ''}`} />
-                <span>{corpusLoading ? 'Refreshing...' : 'Refresh'}</span>
+                <RefreshCw className={`w-3 h-3 ${corpusLoading ? 'animate-spin text-red-600' : ''}`} />
+                <span>{corpusLoading ? '...' : 'Refresh'}</span>
               </button>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {corpusLoading ? (
-                <div className="bg-slate-50 border border-slate-200 rounded-xl py-12 px-6 text-center shadow-xs space-y-3">
-                  <div className="inline-flex p-3 rounded-full bg-red-50 text-red-600 mb-1">
-                    <Loader2 className="w-6 h-6 animate-spin" />
-                  </div>
-                  <h4 className="text-sm font-bold text-slate-900">Loading Corpus Sources...</h4>
-                  <p className="text-xs text-slate-500 font-mono max-w-sm mx-auto">Fetching indexed reference past papers and public benchmark test banks</p>
-                </div>
+                <LoadingState
+                  title="Loading Corpus Sources..."
+                  description="Fetching indexed reference past papers and public benchmark test banks"
+                />
               ) : corpusSources.length === 0 ? (
                 <div className="text-xs text-slate-400 p-4 text-center">No corpus sources registered yet.</div>
               ) : (
                 corpusSources.map((cs) => (
-                  <div key={cs.id} className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
-                    <div className="flex justify-between items-center">
-                      <span className="font-bold text-xs text-slate-800">{cs.name}</span>
-                      <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-slate-200 text-slate-700 font-semibold">
-                        {cs.type}
-                      </span>
-                    </div>
-                    {cs.licenseNote && (
-                      <span className="text-[11px] text-slate-500 block italic">{cs.licenseNote}</span>
-                    )}
+                  <div key={cs.id} className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg flex justify-between items-center">
+                    <span className="font-bold text-xs text-slate-800">{cs.name}</span>
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-semibold">
+                      {cs.type}
+                    </span>
                   </div>
                 ))
               )}
@@ -795,110 +744,102 @@ export const AdminPoliciesPage: React.FC = () => {
         </div>
       )}
 
-      {/* ALL-IN-ONE Propose Policy Modal */}
+      {/* ALL-IN-ONE Propose Policy Modal - Minimal & Clean */}
       {showProposeModal && (
         <ModalPortal>
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/65 backdrop-blur-sm p-4 sm:p-6 overflow-y-auto">
-            <div className="bg-white rounded-2xl max-w-4xl w-full shadow-2xl border border-slate-200 overflow-hidden my-6 animate-in fade-in zoom-in-95">
-              {/* Red brand accent strip */}
-              <div className="h-1.5 w-full bg-red-600" />
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 sm:p-6 overflow-y-auto">
+            <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden my-6 animate-in fade-in zoom-in-95">
+              {/* Brand Accent Bar */}
+              <div className="h-1 w-full bg-red-600" />
 
               {/* Modal Header */}
-              <div className="p-6 pb-4 border-b border-slate-200 flex items-start justify-between">
+              <div className="p-5 pb-3 border-b border-slate-200 flex items-start justify-between">
                 <div>
-                  <div className="flex items-center space-x-2 mb-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-red-50 text-red-700 border border-red-200">
-                      Dual-Control Governance
+                  <div className="flex items-center space-x-2 mb-0.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-red-50 text-red-700 border border-red-200">
+                      New Policy Proposal
                     </span>
-                    <span className="text-xs text-slate-400 font-mono">NEW POLICY PROPOSAL</span>
                   </div>
-                  <h3 className="text-lg font-bold text-slate-900">Propose Institutional Approval Policy</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Configure reviewer workflow model, difficulty tolerance, review SLA, and screening cutoffs.
+                  <h3 className="text-base font-bold text-slate-900">Propose Approval Policy</h3>
+                  <p className="text-xs text-slate-500">
+                    Define reviewer requirements, tolerance thresholds, and review SLAs.
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowProposeModal(false)}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               {/* Modal Body */}
-              <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+              <div className="p-5 space-y-4 max-h-[72vh] overflow-y-auto">
                 {/* Section 1: Reviewer Workflow Architecture */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                      1. Reviewer Workflow Protocol
-                    </label>
-                    <span className="text-[11px] text-slate-400 font-mono">Admission workflow</span>
-                  </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-900 uppercase tracking-wider block">
+                    1. Reviewer Protocol
+                  </label>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                     {/* Option 1: 1 Reviewer Fast-Track */}
                     <div
                       onClick={() => setRequiredReviewers(1)}
-                      className={`p-4 rounded-xl border cursor-pointer transition-all ${
+                      className={`p-3 rounded-xl border cursor-pointer transition-all ${
                         requiredReviewers === 1
                           ? 'border-black bg-slate-50 ring-2 ring-black shadow-xs'
                           : 'border-slate-200 hover:border-slate-300 bg-white'
                       }`}
                     >
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center space-x-2">
-                          <div className={`p-1.5 rounded-lg ${requiredReviewers === 1 ? 'bg-black text-white' : 'bg-slate-100 text-slate-600'}`}>
-                            <Users className="w-4 h-4" />
-                          </div>
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center space-x-1.5">
+                          <Users className="w-4 h-4 text-slate-700" />
                           <span className="text-xs font-bold text-slate-900">1 Reviewer (Fast-Track)</span>
                         </div>
-                        <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">
-                          Direct Admission
+                        <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded">
+                          Direct
                         </span>
                       </div>
-                      <p className="text-xs text-slate-600 leading-relaxed">
-                        Single blind solve. Admitted directly into the Question Bank if author key matches. Divergences route to Moderator.
+                      <p className="text-[11px] text-slate-500 leading-snug">
+                        Single blind solve. Direct admission if author key matches.
                       </p>
                     </div>
 
                     {/* Option 2: 2 Reviewers Consensus */}
                     <div
                       onClick={() => setRequiredReviewers(2)}
-                      className={`p-4 rounded-xl border cursor-pointer transition-all ${
+                      className={`p-3 rounded-xl border cursor-pointer transition-all ${
                         requiredReviewers >= 2
                           ? 'border-black bg-slate-50 ring-2 ring-black shadow-xs'
                           : 'border-slate-200 hover:border-slate-300 bg-white'
                       }`}
                     >
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center space-x-2">
-                          <div className={`p-1.5 rounded-lg ${requiredReviewers >= 2 ? 'bg-black text-white' : 'bg-slate-100 text-slate-600'}`}>
-                            <Scale className="w-4 h-4" />
-                          </div>
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center space-x-1.5">
+                          <Scale className="w-4 h-4 text-slate-700" />
                           <span className="text-xs font-bold text-slate-900">2 Reviewers (Consensus)</span>
                         </div>
-                        <span className="text-[10px] font-semibold bg-red-100 text-red-800 px-2 py-0.5 rounded">
-                          Calibrated Bank
+                        <span className="text-[10px] font-semibold bg-red-100 text-red-800 px-1.5 py-0.2 rounded">
+                          Calibrated
                         </span>
                       </div>
-                      <p className="text-xs text-slate-600 leading-relaxed">
-                        Dual blind solves. Auto-promoted if difficulty delta is within tolerance. Divergent scores route to Moderator.
+                      <p className="text-[11px] text-slate-500 leading-snug">
+                        Dual blind solves. Auto-promoted if difficulty consensus matches.
                       </p>
                     </div>
                   </div>
 
-                  {/* Compact Reviewer Stepper */}
-                  <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs">
-                    <span className="font-semibold text-slate-700">Reviewer Panel Size:</span>
-                    <div className="flex items-center space-x-1.5">
+                  {/* Reviewer Panel Size */}
+                  <div className="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs">
+                    <span className="font-semibold text-slate-700 text-[11px]">Panel Size:</span>
+                    <div className="flex items-center space-x-1">
                       {[1, 2, 3, 4, 5].map((num) => (
                         <button
                           key={num}
                           type="button"
                           onClick={() => setRequiredReviewers(num)}
-                          className={`w-7 h-7 text-xs font-bold rounded-md transition-colors ${
+                          className={`w-6 h-6 text-xs font-bold rounded transition-colors ${
                             requiredReviewers === num
                               ? 'bg-black text-white'
                               : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
@@ -911,18 +852,18 @@ export const AdminPoliciesPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Section 2: Calibration Tolerance & Review Turnaround SLA */}
-                <div className="space-y-3">
+                {/* Section 2: Tolerance & SLA */}
+                <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-900 uppercase tracking-wider block">
-                    2. Calibration Tolerance & Review Turnaround SLA
+                    2. Tolerance & Review Turnaround
                   </label>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {/* Tolerance */}
-                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-slate-800">Difficulty Tolerance</span>
-                        <span className="px-2 py-0.5 rounded bg-black text-white text-xs font-mono font-bold">
+                        <span className="px-1.5 py-0.5 rounded bg-black text-white text-[11px] font-bold">
                           ±{difficultyTolerance} pts
                         </span>
                       </div>
@@ -934,43 +875,39 @@ export const AdminPoliciesPage: React.FC = () => {
                         step="5"
                         value={difficultyTolerance}
                         onChange={(e) => setDifficultyTolerance(parseInt(e.target.value, 10))}
-                        className="w-full accent-red-600 cursor-pointer"
+                        className="w-full accent-red-600 cursor-pointer h-1.5 bg-slate-200 rounded"
                       />
 
-                      <div className="flex items-center justify-between gap-1 text-[11px]">
+                      <div className="flex items-center justify-between gap-1 text-[10px]">
                         <button
                           type="button"
                           onClick={() => setDifficultyTolerance(10)}
-                          className={`px-2.5 py-1 rounded font-mono transition-colors ${difficultyTolerance === 10 ? 'bg-black text-white font-bold' : 'bg-white border text-slate-600 hover:bg-slate-100'}`}
+                          className={`px-2 py-0.5 rounded font-medium transition-colors ${difficultyTolerance === 10 ? 'bg-black text-white font-bold' : 'bg-white border text-slate-600 hover:bg-slate-100'}`}
                         >
-                          ±10 pts (Strict)
+                          ±10 Strict
                         </button>
                         <button
                           type="button"
                           onClick={() => setDifficultyTolerance(20)}
-                          className={`px-2.5 py-1 rounded font-mono transition-colors ${difficultyTolerance === 20 ? 'bg-black text-white font-bold' : 'bg-white border text-slate-600 hover:bg-slate-100'}`}
+                          className={`px-2 py-0.5 rounded font-medium transition-colors ${difficultyTolerance === 20 ? 'bg-black text-white font-bold' : 'bg-white border text-slate-600 hover:bg-slate-100'}`}
                         >
-                          ±20 pts (Standard)
+                          ±20 Standard
                         </button>
                         <button
                           type="button"
                           onClick={() => setDifficultyTolerance(30)}
-                          className={`px-2.5 py-1 rounded font-mono transition-colors ${difficultyTolerance === 30 ? 'bg-black text-white font-bold' : 'bg-white border text-slate-600 hover:bg-slate-100'}`}
+                          className={`px-2 py-0.5 rounded font-medium transition-colors ${difficultyTolerance === 30 ? 'bg-black text-white font-bold' : 'bg-white border text-slate-600 hover:bg-slate-100'}`}
                         >
-                          ±30 pts (Relaxed)
+                          ±30 Relaxed
                         </button>
                       </div>
-
-                      <p className="text-[11px] text-slate-500 leading-tight">
-                        Ratings within ±{difficultyTolerance} pts auto-promote without moderator.
-                      </p>
                     </div>
 
                     {/* Review SLA Days */}
-                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-slate-800">Turnaround SLA</span>
-                        <span className="px-2 py-0.5 rounded bg-black text-white text-xs font-mono font-bold">
+                        <span className="px-1.5 py-0.5 rounded bg-black text-white text-[11px] font-bold">
                           {maxReviewDays} Days
                         </span>
                       </div>
@@ -982,112 +919,84 @@ export const AdminPoliciesPage: React.FC = () => {
                         step="1"
                         value={maxReviewDays}
                         onChange={(e) => setMaxReviewDays(parseInt(e.target.value, 10))}
-                        className="w-full accent-red-600 cursor-pointer"
+                        className="w-full accent-red-600 cursor-pointer h-1.5 bg-slate-200 rounded"
                       />
 
-                      <div className="flex items-center justify-between gap-1 text-[11px]">
+                      <div className="flex items-center justify-between gap-1 text-[10px]">
                         <button
                           type="button"
                           onClick={() => setMaxReviewDays(3)}
-                          className={`px-2.5 py-1 rounded font-mono transition-colors ${maxReviewDays === 3 ? 'bg-black text-white font-bold' : 'bg-white border text-slate-600 hover:bg-slate-100'}`}
+                          className={`px-2 py-0.5 rounded font-medium transition-colors ${maxReviewDays === 3 ? 'bg-black text-white font-bold' : 'bg-white border text-slate-600 hover:bg-slate-100'}`}
                         >
                           3 Days
                         </button>
                         <button
                           type="button"
                           onClick={() => setMaxReviewDays(7)}
-                          className={`px-2.5 py-1 rounded font-mono transition-colors ${maxReviewDays === 7 ? 'bg-black text-white font-bold' : 'bg-white border text-slate-600 hover:bg-slate-100'}`}
+                          className={`px-2 py-0.5 rounded font-medium transition-colors ${maxReviewDays === 7 ? 'bg-black text-white font-bold' : 'bg-white border text-slate-600 hover:bg-slate-100'}`}
                         >
                           7 Days (Default)
                         </button>
                         <button
                           type="button"
                           onClick={() => setMaxReviewDays(14)}
-                          className={`px-2.5 py-1 rounded font-mono transition-colors ${maxReviewDays === 14 ? 'bg-black text-white font-bold' : 'bg-white border text-slate-600 hover:bg-slate-100'}`}
+                          className={`px-2 py-0.5 rounded font-medium transition-colors ${maxReviewDays === 14 ? 'bg-black text-white font-bold' : 'bg-white border text-slate-600 hover:bg-slate-100'}`}
                         >
                           14 Days
                         </button>
                       </div>
-
-                      <p className="text-[11px] text-slate-500 leading-tight">
-                        Review turnaround window before automated SLA escalation.
-                      </p>
                     </div>
                   </div>
                 </div>
 
-                {/* Section 3: Security & Verification Enforcements */}
-                <div className="space-y-3">
+                {/* Section 3: Governance & Security Controls */}
+                <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-900 uppercase tracking-wider block">
-                    3. Verification & Governance Controls
+                    3. Governance Controls
                   </label>
 
-                  <div className="space-y-2">
-                    <label className="flex items-start space-x-3 p-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer transition-colors">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <label className="flex items-center space-x-2 p-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer transition-colors">
                       <input
                         type="checkbox"
                         checked={requireBlindSolve}
                         onChange={(e) => setRequireBlindSolve(e.target.checked)}
-                        className="mt-0.5 rounded border-slate-300 text-black focus:ring-black w-4 h-4"
+                        className="rounded border-slate-300 text-black focus:ring-black w-3.5 h-3.5"
                       />
-                      <div>
-                        <span className="text-xs font-bold text-slate-900 block">
-                          Enforce Blind Solve
-                        </span>
-                        <span className="text-[11px] text-slate-500 block leading-tight">
-                          Reviewers independently solve before author answer key is decrypted.
-                        </span>
-                      </div>
+                      <span className="text-xs font-bold text-slate-800">Enforce Blind Solve</span>
                     </label>
 
-                    <label className="flex items-start space-x-3 p-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer transition-colors">
+                    <label className="flex items-center space-x-2 p-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer transition-colors">
                       <input
                         type="checkbox"
                         checked={requireModerator}
                         onChange={(e) => setRequireModerator(e.target.checked)}
-                        className="mt-0.5 rounded border-slate-300 text-black focus:ring-black w-4 h-4"
+                        className="rounded border-slate-300 text-black focus:ring-black w-3.5 h-3.5"
                       />
-                      <div>
-                        <span className="text-xs font-bold text-slate-900 block">
-                          Require Moderator Sign-off
-                        </span>
-                        <span className="text-[11px] text-slate-500 block leading-tight">
-                          Mandatory moderator review for flagged or conflict items.
-                        </span>
-                      </div>
+                      <span className="text-xs font-bold text-slate-800">Moderator Sign-off</span>
                     </label>
 
-                    <label className="flex items-start space-x-3 p-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer transition-colors">
+                    <label className="flex items-center space-x-2 p-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer transition-colors">
                       <input
                         type="checkbox"
                         checked={requireLanguageReview}
                         onChange={(e) => setRequireLanguageReview(e.target.checked)}
-                        className="mt-0.5 rounded border-slate-300 text-black focus:ring-black w-4 h-4"
+                        className="rounded border-slate-300 text-black focus:ring-black w-3.5 h-3.5"
                       />
-                      <div>
-                        <span className="text-xs font-bold text-slate-900 block">
-                          Bilingual Translation Review
-                        </span>
-                        <span className="text-[11px] text-slate-500 block leading-tight">
-                          Mandatory parity audit for Hindi & English exam items.
-                        </span>
-                      </div>
+                      <span className="text-xs font-bold text-slate-800">Translation Parity</span>
                     </label>
                   </div>
                 </div>
 
                 {/* Section 4: Originality Screening Thresholds */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                      4. Originality Detection Cutoffs
-                    </label>
-                    <span className="text-[11px] text-slate-400 font-mono">MinHash LSH & TF-IDF</span>
-                  </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-900 uppercase tracking-wider block">
+                    4. Originality Cutoffs
+                  </label>
 
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
-                      <label className="text-[11px] font-semibold text-slate-700 block">Exact Match</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
+                      <label className="text-[10px] font-semibold text-slate-700 block">Exact Match</label>
                       <div className="flex items-center space-x-1">
                         <input
                           type="number"
@@ -1095,15 +1004,14 @@ export const AdminPoliciesPage: React.FC = () => {
                           max="100"
                           value={Math.round(exactMatchThreshold * 100)}
                           onChange={(e) => setExactMatchThreshold(parseInt(e.target.value, 10) / 100)}
-                          className="w-full text-xs p-1.5 rounded border border-slate-300 text-center font-mono font-bold"
+                          className="w-full text-xs p-1 rounded border border-slate-300 text-center font-bold"
                         />
                         <span className="text-xs text-slate-500 font-bold">%</span>
                       </div>
-                      <span className="text-[10px] text-slate-400 block">Direct duplicate</span>
                     </div>
 
-                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
-                      <label className="text-[11px] font-semibold text-slate-700 block">High Similarity</label>
+                    <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
+                      <label className="text-[10px] font-semibold text-slate-700 block">High Similarity</label>
                       <div className="flex items-center space-x-1">
                         <input
                           type="number"
@@ -1111,15 +1019,14 @@ export const AdminPoliciesPage: React.FC = () => {
                           max="99"
                           value={Math.round(highSimilarityThreshold * 100)}
                           onChange={(e) => setHighSimilarityThreshold(parseInt(e.target.value, 10) / 100)}
-                          className="w-full text-xs p-1.5 rounded border border-slate-300 text-center font-mono font-bold"
+                          className="w-full text-xs p-1 rounded border border-slate-300 text-center font-bold"
                         />
                         <span className="text-xs text-slate-500 font-bold">%</span>
                       </div>
-                      <span className="text-[10px] text-slate-400 block">Quarantine alert</span>
                     </div>
 
-                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
-                      <label className="text-[11px] font-semibold text-slate-700 block">Medium Similarity</label>
+                    <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
+                      <label className="text-[10px] font-semibold text-slate-700 block">Med Similarity</label>
                       <div className="flex items-center space-x-1">
                         <input
                           type="number"
@@ -1127,33 +1034,29 @@ export const AdminPoliciesPage: React.FC = () => {
                           max="80"
                           value={Math.round(mediumSimilarityThreshold * 100)}
                           onChange={(e) => setMediumSimilarityThreshold(parseInt(e.target.value, 10) / 100)}
-                          className="w-full text-xs p-1.5 rounded border border-slate-300 text-center font-mono font-bold"
+                          className="w-full text-xs p-1 rounded border border-slate-300 text-center font-bold"
                         />
                         <span className="text-xs text-slate-500 font-bold">%</span>
                       </div>
-                      <span className="text-[10px] text-slate-400 block">Reviewer warning</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Two-Person Integrity Notice Banner */}
-                <div className="p-3.5 bg-amber-50/90 border border-amber-300 rounded-xl flex items-start space-x-3 text-xs text-amber-900">
-                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                  <div className="leading-relaxed">
-                    <strong className="font-bold text-amber-950">
-                      Strict Dual-Control Rule:
-                    </strong>{' '}
-                    Once proposed, a second administrator must independently sign off to activate this policy. Self-approval is blocked.
-                  </div>
+                {/* Minimal Two-Person Notice */}
+                <div className="p-2.5 bg-amber-50 border border-amber-300 rounded-lg flex items-center space-x-2 text-xs text-amber-900">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span className="text-[11px]">
+                    <strong>Dual-Control:</strong> Requires approval from a 2nd administrator before taking effect.
+                  </span>
                 </div>
               </div>
 
               {/* Modal Footer */}
-              <div className="p-4 px-6 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+              <div className="p-3.5 px-5 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
                 <button
                   type="button"
                   onClick={() => setShowProposeModal(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors"
+                  className="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
@@ -1161,14 +1064,14 @@ export const AdminPoliciesPage: React.FC = () => {
                   type="button"
                   disabled={actionLoading}
                   onClick={handleProposePolicy}
-                  className="px-5 py-2.5 text-xs font-bold text-white bg-black hover:bg-neutral-800 border border-black rounded-lg shadow-sm transition-colors flex items-center space-x-2 disabled:opacity-50"
+                  className="px-4 py-1.5 text-xs font-bold text-white bg-black hover:bg-neutral-800 border border-black rounded-lg shadow-xs transition-colors flex items-center space-x-1.5 disabled:opacity-50"
                 >
                   {actionLoading ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
                   ) : (
                     <Lock className="w-3.5 h-3.5 text-red-500" />
                   )}
-                  <span>{actionLoading ? 'Submitting Proposal...' : 'Submit Policy Proposal (Requires 2nd Admin)'}</span>
+                  <span>{actionLoading ? 'Submitting...' : 'Submit Proposal'}</span>
                 </button>
               </div>
             </div>

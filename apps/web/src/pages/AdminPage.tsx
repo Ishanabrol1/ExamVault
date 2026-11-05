@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { apiRequest } from '../lib/api-client';
 import { formatDate } from '../lib/utils';
 import { ModalPortal } from '../components/ModalPortal';
+import { LoadingState } from '../components/LoadingState';
 import {
   Users,
   BookOpen,
@@ -10,7 +11,6 @@ import {
   CheckCircle2,
   FolderTree,
   UserPlus,
-  Loader2,
   RefreshCw,
   Search,
   Lock,
@@ -118,13 +118,17 @@ export const AdminPage: React.FC<AdminPageProps> = ({
   const [auditorLookupInput, setAuditorLookupInput] = useState('');
   const [auditorLookupResult, setAuditorLookupResult] = useState<any | null>(null);
 
-  // Fetch users & available subjects
-  const fetchUsers = async () => {
-    setUsersLoading(true);
+  // Fetch users & available subjects concurrently
+  const fetchUsers = async (bypass = false) => {
+    if (!users.length) {
+      setUsersLoading(true);
+    }
     try {
-      const res = await apiRequest<{ success: boolean; data: UserItem[] }>('/users');
+      const [res, subRes] = await Promise.all([
+        apiRequest<{ success: boolean; data: UserItem[] }>('/users', { bypassCache: bypass }),
+        apiRequest<{ success: boolean; data: any[] }>('/syllabus/subjects', { bypassCache: bypass }).catch(() => ({ success: true, data: [] })),
+      ]);
       setUsers(res.data || []);
-      const subRes = await apiRequest<{ success: boolean; data: any[] }>('/syllabus/subjects');
       setAvailableSubjects(subRes.data || []);
     } catch (err) {
       console.error('Failed to load users:', err);
@@ -377,14 +381,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({
         <div>
           <div className="flex items-center space-x-2.5">
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-              Administration & Governance
+              Administration
             </h1>
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-800 border border-slate-200 font-semibold">
               Admin Access
             </span>
           </div>
           <p className="text-sm text-slate-600 mt-1">
-            Manage institutional users, roles, and syllabus trees. (Admin has zero access to question ciphertexts).
+            Manage users, roles, syllabus taxonomy, and workflow rules.
           </p>
         </div>
 
@@ -396,7 +400,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
             }`}
           >
             <Users className="w-4 h-4" />
-            <span>Users & Access</span>
+            <span>Users</span>
           </button>
           <button
             onClick={() => handleSelectTab('syllabus')}
@@ -405,7 +409,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
             }`}
           >
             <BookOpen className="w-4 h-4" />
-            <span>Syllabus Taxonomy</span>
+            <span>Syllabus</span>
           </button>
           <button
             onClick={() => handleSelectTab('workflow')}
@@ -414,7 +418,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
             }`}
           >
             <Layers className="w-4 h-4" />
-            <span>Question Bank & Workflow</span>
+            <span>Workflow</span>
           </button>
         </div>
       </div>
@@ -440,10 +444,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({
       {activeTab === 'users' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-slate-900">Institutional Users & Access Directory</h2>
+            <h2 className="text-base font-bold text-slate-900">User Directory</h2>
             <div className="flex items-center space-x-2">
               <button
-                onClick={fetchUsers}
+                onClick={() => fetchUsers(true)}
                 disabled={usersLoading}
                 className="inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all disabled:opacity-50"
               >
@@ -455,7 +459,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                 className="inline-flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-red-600 hover:bg-red-700 text-white shadow-xs transition-all"
               >
                 <UserPlus className="w-4 h-4" />
-                <span>Enroll New User</span>
+                <span>Add User</span>
               </button>
             </div>
           </div>
@@ -465,7 +469,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
             <ModalPortal>
               <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/65 backdrop-blur-sm">
                 <div className="bg-white rounded-2xl w-full max-w-md p-6 border border-slate-200 shadow-2xl">
-                <h3 className="text-base font-bold text-slate-900 mb-4">Enroll New User</h3>
+                <h3 className="text-base font-bold text-slate-900 mb-4">Add User</h3>
                 <form onSubmit={handleCreateUser} className="space-y-4">
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-1">Full Name *</label>
@@ -651,15 +655,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({
 
           {/* User List Table */}
           {usersLoading ? (
-            <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-xs space-y-3">
-              <div className="inline-flex p-3 rounded-full bg-red-50 text-red-600 mb-1">
-                <Loader2 className="w-6 h-6 animate-spin" />
-              </div>
-              <h3 className="text-sm font-bold text-slate-900">Loading User Directory...</h3>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto font-mono">
-                Fetching institutional accounts, cryptographic key statuses, and role privileges
-              </p>
-            </div>
+            <LoadingState
+              title="Loading User Directory..."
+              description="Fetching institutional accounts, cryptographic key statuses, and role privileges"
+            />
           ) : users.length === 0 ? (
             <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-500 text-xs shadow-xs">
               No institutional users found.
@@ -813,15 +812,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({
 
           {/* Exam Hierarchy */}
           {syllabusLoading ? (
-            <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-xs space-y-3">
-              <div className="inline-flex p-3 rounded-full bg-red-50 text-red-600 mb-1">
-                <Loader2 className="w-6 h-6 animate-spin" />
-              </div>
-              <h3 className="text-sm font-bold text-slate-900">Fetching Syllabus Taxonomy Tree...</h3>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto font-mono">
-                Loading hierarchical exam definitions, subjects, topics, and curriculum taxonomy
-              </p>
-            </div>
+            <LoadingState
+              title="Fetching Syllabus Taxonomy Tree..."
+              description="Loading hierarchical exam definitions, subjects, topics, and curriculum taxonomy"
+            />
           ) : exams.length === 0 ? (
             <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-xs space-y-3">
               <FolderTree className="w-10 h-10 text-slate-300 mx-auto" />
@@ -1318,12 +1312,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({
 
             {/* Table */}
             {questionsLoading ? (
-              <div className="p-12 flex flex-col items-center justify-center space-y-3">
-                <div className="inline-flex p-3 rounded-full bg-red-50 text-red-600 mb-1">
-                  <Loader2 className="w-7 h-7 animate-spin" />
-                </div>
-                <p className="text-xs text-slate-500 font-mono">Loading question repository metadata...</p>
-              </div>
+              <LoadingState
+                title="Loading Question Repository..."
+                description="Retrieving question repository records, status tracking, and metadata"
+              />
             ) : questions.length === 0 ? (
               <div className="p-12 text-center text-slate-500 text-xs">
                 No questions found in repository.

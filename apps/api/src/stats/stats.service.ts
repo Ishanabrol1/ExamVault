@@ -3,12 +3,21 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class StatsService {
+  private statsCache: { data: any; expiry: number } | null = null;
+
   constructor(private prisma: PrismaService) {}
+
+  public invalidateStatsCache() {
+    this.statsCache = null;
+  }
 
   /**
    * Get question bank statistics — metadata only, no content
    */
   async getBankStatistics() {
+    if (this.statsCache && Date.now() < this.statsCache.expiry) {
+      return this.statsCache.data;
+    }
     const [
       totalQuestions,
       byStatus,
@@ -63,7 +72,7 @@ export class StatsService {
       `,
     ]);
 
-    return {
+    const result = {
       totalQuestions,
       byStatus: byStatus.reduce((acc, r) => {
         acc[r.status] = Number(r.count);
@@ -83,5 +92,7 @@ export class StatsService {
         count: Number(r.count),
       })),
     };
+    this.statsCache = { data: result, expiry: Date.now() + 20000 };
+    return result;
   }
 }

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiRequest } from '../lib/api-client';
+import { LoadingState } from '../components/LoadingState';
 import { ModalPortal } from '../components/ModalPortal';
 import {
   ShieldAlert,
@@ -7,8 +8,6 @@ import {
   CheckCircle2,
   Clock,
   KeyRound,
-  Lock,
-  Loader2,
   RefreshCw,
   UserCheck,
   Archive,
@@ -78,11 +77,13 @@ export const ModeratorConsole: React.FC = () => {
   const [retireNote, setRetireNote] = useState<string>('');
 
   // Fetch unified moderation queue
-  const fetchQueue = async () => {
-    setQueueLoading(true);
+  const fetchQueue = async (bypass = false) => {
+    if (!readyForApproval.length && !duplicateItems.length && !disagreements.length) {
+      setQueueLoading(true);
+    }
     setError(null);
     try {
-      const res = await apiRequest<{ success: boolean; data: any }>('/moderation/queue');
+      const res = await apiRequest<{ success: boolean; data: any }>('/moderation/queue', { bypassCache: bypass });
       if (res.data) {
         const duplicates = res.data.duplicateFlags || [];
         const ready = res.data.readyForApproval || [];
@@ -334,7 +335,7 @@ export const ModeratorConsole: React.FC = () => {
     }
   };
 
-  // Submit Question Retirement
+  // Submit Retirement
   const handleRetireSubmit = async () => {
     if (!retireVersionId.trim() || !retireNote.trim()) {
       setError('Please provide the question version UUID and a detailed retirement note.');
@@ -369,31 +370,29 @@ export const ModeratorConsole: React.FC = () => {
   return (
     <div className="w-full space-y-6">
       {/* Console Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-200 gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-xs">
         <div>
-          <div className="flex items-center space-x-2">
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Institutional Moderator Console</h1>
-            <span className="text-[10px] font-mono uppercase px-2.5 py-0.5 rounded-full bg-slate-900 text-white font-bold tracking-wider">
-              Senior Academic Authority
+          <div className="flex items-center space-x-2.5">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+              Moderator Console
+            </h1>
+            <span className="text-xs px-2.5 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200 font-medium">
+              Moderator
             </span>
           </div>
-          <p className="text-sm text-slate-500 mt-1 max-w-3xl">
-            Queue-isolated gatekeeper authority: decides duplicate flags, resolves reviewer blind-solve disputes, and applies cryptographic Ed25519 signatures for final question approval.
+          <p className="text-sm text-slate-600 mt-1">
+            Review flagged duplicates, resolve reviewer disputes, and authorize final approval.
           </p>
         </div>
         <div className="flex items-center space-x-2 shrink-0">
           <button
-            onClick={fetchQueue}
+            onClick={() => fetchQueue(true)}
             disabled={queueLoading}
-            className="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition-colors disabled:opacity-50"
+            className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${queueLoading ? 'animate-spin text-red-600' : ''}`} />
             <span>{queueLoading ? 'Refreshing...' : 'Refresh Queue'}</span>
           </button>
-          <span className="hidden lg:flex items-center text-xs font-mono bg-slate-50 text-slate-700 border border-slate-200 px-3 py-2 rounded-lg font-medium">
-            <Lock className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
-            Queue Isolation & Anonymity Active
-          </span>
         </div>
       </div>
 
@@ -414,13 +413,13 @@ export const ModeratorConsole: React.FC = () => {
       {/* Strict Role Tab Navigation: Only Authorized Queues */}
       <div className="flex border-b border-slate-200 space-x-2 overflow-x-auto">
         {[
-          { key: 'ready', label: 'Ready for Final Approval', count: readyForApproval.length, icon: CheckCircle2, highlight: readyForApproval.length > 0 },
-          { key: 'duplicates', label: 'Duplicate Flags', count: duplicateItems.length, icon: ShieldAlert, highlight: duplicateItems.length > 0 },
+          { key: 'ready', label: 'Ready for Approval', count: readyForApproval.length, icon: CheckCircle2, highlight: readyForApproval.length > 0 },
+          { key: 'duplicates', label: 'Duplicates', count: duplicateItems.length, icon: ShieldAlert, highlight: duplicateItems.length > 0 },
           { key: 'disagreements', label: 'Disagreements', count: disagreements.length, icon: AlertTriangle, highlight: disagreements.length > 0 },
           { key: 'difficultyConflicts', label: 'Difficulty Conflicts', count: difficultyConflicts.length, icon: Sliders, highlight: difficultyConflicts.length > 0 },
           { key: 'overdue', label: 'Overdue Reviews', count: overdueItems.length, icon: Clock, highlight: false },
           { key: 'staffing', label: 'Staffing Warnings', count: staffingWarnings.length, icon: UserCheck, highlight: false },
-          { key: 'retirement', label: 'Question Retirement', count: null, icon: Archive, highlight: false },
+          { key: 'retirement', label: 'Retirement', count: null, icon: Archive, highlight: false },
         ].map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.key;
@@ -456,18 +455,13 @@ export const ModeratorConsole: React.FC = () => {
 
       {/* Tab Panels */}
       {queueLoading ? (
-        <div className="bg-white border border-slate-200 rounded-xl p-12 text-center shadow-xs space-y-3">
-          <div className="inline-flex p-3 rounded-full bg-red-50 text-red-600 mb-1">
-            <Loader2 className="w-7 h-7 animate-spin text-red-600" />
-          </div>
-          <h3 className="text-sm font-bold text-slate-900">Synchronizing Moderator Queue...</h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto font-mono">
-            Filtering duplicate flags, unresolved reviewer disagreements, and pending final approvals under strict zero-knowledge anonymity.
-          </p>
-        </div>
+        <LoadingState
+          title="Synchronizing Moderator Queue..."
+          description="Filtering duplicate flags, unresolved reviewer disagreements, and pending final approvals"
+        />
       ) : (
         <>
-          {/* TAB 1: Ready for Final Approval */}
+          {/* TAB 1: Ready for Approval */}
           {activeTab === 'ready' && (
             <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
               <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
@@ -549,12 +543,12 @@ export const ModeratorConsole: React.FC = () => {
             </div>
           )}
 
-          {/* TAB 2: Duplicate Flags */}
+          {/* TAB 2: Duplicates */}
           {activeTab === 'duplicates' && (
             <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
               <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">Originality Duplicate Flags</h3>
+                  <h3 className="text-sm font-bold text-slate-900">Originality Duplicates</h3>
                   <p className="text-xs text-slate-500">
                     Questions flagged by copy-detection algorithms (exact hash, MinHash, or TF-IDF). Evaluate report and record disposition.
                   </p>
@@ -566,7 +560,7 @@ export const ModeratorConsole: React.FC = () => {
               {duplicateItems.length === 0 ? (
                 <div className="p-12 text-center text-slate-500">
                   <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-2" />
-                  <p className="font-semibold text-slate-800">No Duplicate Flags Active</p>
+                  <p className="font-semibold text-slate-800">No Duplicates Active</p>
                   <p className="text-xs">No submitted questions currently flagged for similarity violations.</p>
                 </div>
               ) : (
@@ -974,7 +968,7 @@ export const ModeratorConsole: React.FC = () => {
             </div>
           )}
 
-          {/* TAB 6: Question Retirement */}
+          {/* TAB 6: Retirement */}
           {activeTab === 'retirement' && (
             <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-6 max-w-2xl">
               <div>

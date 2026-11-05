@@ -71,20 +71,22 @@ async function bootstrapServer(): Promise<Express> {
     return cachedServer;
   }
 
-  // Hard timeout so NestJS cold-start can never hang the Vercel function.
+  const isVercel = Boolean(process.env.VERCEL);
+  // Hard timeout only for Vercel serverless cold-start so it doesn't hang indefinitely.
   const bootstrapTimeout = () =>
     new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('NestJS bootstrap timeout (15s)')), 15000),
+      setTimeout(() => reject(new Error('NestJS bootstrap timeout (45s)')), 45000),
     );
 
   try {
     const expressApp = express();
-    const app = await Promise.race([
-      NestFactory.create(AppModule, new ExpressAdapter(expressApp), {
-        logger: ['error', 'warn', 'log'],
-      }),
-      bootstrapTimeout(),
-    ]);
+    const createPromise = NestFactory.create(AppModule, new ExpressAdapter(expressApp), {
+      logger: ['error', 'warn', 'log'],
+    });
+
+    const app = isVercel
+      ? await Promise.race([createPromise, bootstrapTimeout()])
+      : await createPromise;
 
     // Security headers
     app.use(
@@ -146,23 +148,23 @@ async function bootstrapServer(): Promise<Express> {
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('api/docs', app, document);
 
-    // Init with timeout too
-    await Promise.race([
-      app.init(),
-      bootstrapTimeout(),
-    ]);
+    if (isVercel) {
+      await Promise.race([app.init(), bootstrapTimeout()]);
+    } else {
+      await app.init();
+    }
     cachedServer = expressApp;
     return cachedServer;
   } catch (error: any) {
-    // NestJS failed to initialize or timed out on this cold start. Do NOT throw —
-    // return a fallback Express app so the Vercel function still responds with JSON
-    // instead of FUNCTION_INVOCATION_FAILED / "A server error has occurred".
     console.error(
-      'NestJS bootstrap failed, falling back to minimal error app:',
+      'NestJS bootstrap failed:',
       error?.message,
     );
-    cachedServer = buildFallbackServer(error?.message || 'nestjs bootstrap failed');
-    return cachedServer;
+    if (isVercel) {
+      cachedServer = buildFallbackServer(error?.message || 'nestjs bootstrap failed');
+      return cachedServer;
+    }
+    throw error;
   }
 }
 
@@ -186,4 +188,22 @@ export default async function handler(req: Request, res: Response) {
 // Express app; do NOT call server.listen() (incompatible with serverless).
 export async function bootstrap(): Promise<Express> {
   return await bootstrapServer();
+}
+
+// Start local dev server when not running in Vercel serverless environment
+if (!process.env.VERCEL) {
+  bootstrapServer()
+    .then((server) => {
+      const port = Number(process.env.PORT || process.env.API_PORT || 3001);
+      server.listen(port, '0.0.0.0', () => {
+        console.log(`ExamVault API running on port ${port}`);
+        console.log(`Swagger docs: http://localhost:${port}/api/docs`);
+      });
+      (server as any).on?.('error', (err: any) => {
+        console.error('Server listen error:', err?.message);
+      });
+    })
+    .catch((err) => {
+      console.error('Fatal bootstrap error:', err);
+    });
 }

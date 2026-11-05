@@ -21,6 +21,11 @@ import {
 @Injectable()
 export class ModerationService {
   private readonly logger = new Logger(ModerationService.name);
+  private queueCache = new Map<string, { data: any; expiry: number }>();
+
+  public invalidateQueueCache() {
+    this.queueCache.clear();
+  }
 
   constructor(
     private prisma: PrismaService,
@@ -49,140 +54,151 @@ export class ModerationService {
       };
     }
 
-    // 1. Duplicate flags
-    const rawDuplicateFlags = await this.prisma.questionVersion.findMany({
-      where: {
-        status: 'DUPLICATE_FLAGGED',
-        ...whereExclusions,
-      },
-      include: {
-        question: {
-          include: {
-            subject: true,
-            topic: true,
-          },
-        },
-        originalityReport: { include: { matches: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+    const cacheKey = moderatorId || 'all';
+    const cached = this.queueCache.get(cacheKey);
+    if (cached && Date.now() < cached.expiry) {
+      return cached.data;
+    }
 
-    // 2. Blind answer disagreements
-    const rawDisagreements = await this.prisma.review.findMany({
-      where: {
-        disagreementFlag: true,
-        disagreementResolved: false,
-        questionVersion: {
+    // High-performance concurrent queries: Execute all 6 queries in parallel
+    const [
+      rawDuplicateFlags,
+      rawDisagreements,
+      rawReadyForApproval,
+      rawDifficultyConflicts,
+      rawOverdueAssignments,
+      rawStaffingWarnings,
+    ] = await Promise.all([
+      // 1. Duplicate flags
+      this.prisma.questionVersion.findMany({
+        where: {
+          status: 'DUPLICATE_FLAGGED',
           ...whereExclusions,
         },
-      },
-      include: {
-        questionVersion: {
-          include: {
-            question: { include: { subject: true, topic: true } },
+        include: {
+          question: {
+            include: {
+              subject: true,
+              topic: true,
+            },
+          },
+          originalityReport: { include: { matches: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      // 2. Blind answer disagreements
+      this.prisma.review.findMany({
+        where: {
+          disagreementFlag: true,
+          disagreementResolved: false,
+          questionVersion: {
+            ...whereExclusions,
           },
         },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    // 3. Ready for final approval (status === MODERATION and no open difficulty conflicts)
-    const rawReadyForApproval = await this.prisma.questionVersion.findMany({
-      where: {
-        status: 'MODERATION',
-        OR: [
-          { difficultyConflictFlag: false },
-          { difficultyConflictResolved: true },
-        ],
-        ...whereExclusions,
-      },
-      include: {
-        question: { include: { subject: true, topic: true } },
-        reviews: {
-          select: {
-            id: true,
-            decision: true,
-            difficultyRating: true,
-            checklist: true,
-            disagreementFlag: true,
-            disagreementResolved: true,
-            submittedAt: true,
+        include: {
+          questionVersion: {
+            include: {
+              question: { include: { subject: true, topic: true } },
+            },
           },
         },
-        parentVersion: {
-          select: {
-            id: true,
-            versionNo: true,
-            contentCommitment: true,
+        orderBy: { createdAt: 'desc' },
+      }),
+      // 3. Ready for final approval
+      this.prisma.questionVersion.findMany({
+        where: {
+          status: 'MODERATION',
+          OR: [
+            { difficultyConflictFlag: false },
+            { difficultyConflictResolved: true },
+          ],
+          ...whereExclusions,
+        },
+        include: {
+          question: { include: { subject: true, topic: true } },
+          reviews: {
+            select: {
+              id: true,
+              decision: true,
+              difficultyRating: true,
+              checklist: true,
+              disagreementFlag: true,
+              disagreementResolved: true,
+              submittedAt: true,
+            },
+          },
+          parentVersion: {
+            select: {
+              id: true,
+              versionNo: true,
+              contentCommitment: true,
+            },
+          },
+          originalityReport: true,
+          approvals: {
+            select: {
+              id: true,
+              role: true,
+              decision: true,
+              timestamp: true,
+              signature: true,
+            },
           },
         },
-        originalityReport: true,
-        approvals: {
-          select: {
-            id: true,
-            role: true,
-            decision: true,
-            timestamp: true,
-            signature: true,
+        orderBy: { createdAt: 'desc' },
+      }),
+      // 4. Difficulty Conflicts
+      this.prisma.questionVersion.findMany({
+        where: {
+          difficultyConflictFlag: true,
+          difficultyConflictResolved: false,
+          ...whereExclusions,
+        },
+        include: {
+          question: { include: { subject: true, topic: true } },
+          reviews: {
+            select: {
+              id: true,
+              decision: true,
+              difficultyRating: true,
+              timeTakenSeconds: true,
+              blindAnswerMatchesKey: true,
+              checklist: true,
+              submittedAt: true,
+            },
           },
         },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    // 4. Difficulty Conflicts requiring moderator resolution
-    const rawDifficultyConflicts = await this.prisma.questionVersion.findMany({
-      where: {
-        difficultyConflictFlag: true,
-        difficultyConflictResolved: false,
-        ...whereExclusions,
-      },
-      include: {
-        question: { include: { subject: true, topic: true } },
-        reviews: {
-          select: {
-            id: true,
-            decision: true,
-            difficultyRating: true,
-            timeTakenSeconds: true,
-            blindAnswerMatchesKey: true,
-            checklist: true,
-            submittedAt: true,
+        orderBy: { createdAt: 'desc' },
+      }),
+      // 5. Overdue reviewer assignments
+      this.prisma.reviewAssignment.findMany({
+        where: {
+          status: 'PENDING',
+          dueDate: { lt: now },
+        },
+        include: {
+          questionVersion: {
+            include: {
+              question: { include: { subject: true, topic: true } },
+            },
           },
         },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    // 5. Overdue reviewer assignments (Workflow control: reassign overdue reviewers)
-    const rawOverdueAssignments = await this.prisma.reviewAssignment.findMany({
-      where: {
-        status: 'PENDING',
-        dueDate: { lt: now },
-      },
-      include: {
-        questionVersion: {
-          include: {
-            question: { include: { subject: true, topic: true } },
+        orderBy: { dueDate: 'asc' },
+      }),
+      // 6. Staffing warnings
+      this.prisma.questionVersion.findMany({
+        where: {
+          status: { in: ['READY_FOR_REVIEW', 'SUBMITTED'] },
+        },
+        include: {
+          question: { include: { subject: true, topic: true } },
+          reviewAssignments: {
+            select: { id: true, status: true },
           },
         },
-      },
-      orderBy: { dueDate: 'asc' },
-    });
-
-    // 5. Staffing warnings (Workflow control: staffing quotas)
-    const rawStaffingWarnings = await this.prisma.questionVersion.findMany({
-      where: {
-        status: { in: ['READY_FOR_REVIEW', 'SUBMITTED'] },
-      },
-      include: {
-        question: { include: { subject: true, topic: true } },
-        reviewAssignments: {
-          select: { id: true, status: true },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+        orderBy: { createdAt: 'desc' },
+      }),
+    ]);
 
     // STRICT ANONYMIZATION:
     // Mask author identity as 'Author'
@@ -261,7 +277,7 @@ export class ModerationService {
       },
     }));
 
-    return {
+    const queueResult = {
       duplicateFlags,
       disagreements,
       difficultyConflicts,
@@ -269,6 +285,8 @@ export class ModerationService {
       overdueAssignments,
       staffingWarnings,
     };
+    this.queueCache.set(cacheKey, { data: queueResult, expiry: Date.now() + 15000 });
+    return queueResult;
   }
 
   /**
@@ -277,10 +295,12 @@ export class ModerationService {
    */
   async resolveDisagreement(
     reviewId: string,
+
     resolutionNote: string,
     moderatorId: string,
     decision: 'REQUEST_CHANGES' | 'REJECT' | 'LET_STAND' = 'LET_STAND',
   ) {
+    this.invalidateQueueCache();
     const review = await this.prisma.review.findUniqueOrThrow({
       where: { id: reviewId },
       include: {
@@ -358,6 +378,7 @@ export class ModerationService {
     input: ModeratorDecisionInput,
     moderatorId: string,
   ) {
+    this.invalidateQueueCache();
     const version = await this.prisma.questionVersion.findUniqueOrThrow({
       where: { id: versionId },
       include: {

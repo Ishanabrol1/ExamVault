@@ -128,7 +128,7 @@ export const LoginPage: React.FC = () => {
             Institutional Examiner Portal
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Tamper-Evident Examination Question Bank & Cryptographic Security
+            Tamper-evident examination question bank
           </p>
         </div>
 
@@ -206,7 +206,7 @@ export const LoginPage: React.FC = () => {
                 disabled={loading}
                 className="w-full mt-2 py-3 px-4 rounded-xl font-semibold text-sm text-white bg-red-600 hover:bg-red-700 active:scale-[0.99] transition-all shadow-sm hover:shadow-md disabled:opacity-50 flex items-center justify-center space-x-2"
               >
-                <span>{loading ? 'Authenticating...' : 'Sign In to Vault'}</span>
+                <span>{loading ? 'Signing In...' : 'Sign In'}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </form>
@@ -308,8 +308,8 @@ export const LoginPage: React.FC = () => {
 
           {/* Quick preset buttons for dev testing */}
           <div className="mt-6 pt-5 border-t border-slate-100">
-            <p className="text-[11px] font-mono uppercase text-slate-400 text-center mb-2 tracking-wide">
-              Quick Test Credentials
+            <p className="text-[11px] text-slate-400 text-center mb-2 font-medium">
+              Demo Credentials
             </p>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
               <button
@@ -361,9 +361,7 @@ export const LoginPage: React.FC = () => {
                 Auditor
               </button>
             </div>
-            <p className="text-[10px] text-slate-400 text-center mt-2.5 font-mono">
-              Role credentials automatically populated on click
-            </p>
+
           </div>
         </div>
       </div>

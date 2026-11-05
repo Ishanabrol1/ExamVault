@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiRequest } from '../lib/api-client';
 import { formatDate } from '../lib/utils';
+import { LoadingState } from '../components/LoadingState';
 import {
   PlusCircle,
   Search,
@@ -14,7 +15,6 @@ import {
   ChevronRight,
   Send,
   MessageSquare,
-  Loader2,
   RefreshCw,
   Lock,
 } from 'lucide-react';
@@ -68,8 +68,10 @@ export const ExaminerDashboard: React.FC<ExaminerDashboardProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  const fetchQuestions = async () => {
-    setLoading(true);
+  const fetchQuestions = async (bypass = false) => {
+    if (!questions.length) {
+      setLoading(true);
+    }
     try {
       const params: Record<string, string> = { limit: '100' };
       if (statusFilter !== 'ALL') {
@@ -77,7 +79,7 @@ export const ExaminerDashboard: React.FC<ExaminerDashboardProps> = ({
       }
       const res = await apiRequest<{ success: boolean; data: { items: QuestionItem[] } }>(
         '/questions',
-        { params },
+        { params, bypassCache: bypass },
       );
       setQuestions(res.data?.items || []);
     } catch (err) {
@@ -148,20 +150,20 @@ export const ExaminerDashboard: React.FC<ExaminerDashboardProps> = ({
         <div>
           <div className="flex items-center space-x-2.5">
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-              Authoring Portal & Question Bank
+              Authoring Portal
             </h1>
-            <span className="text-xs px-2.5 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200 font-mono font-medium">
-              AES-256-GCM
+            <span className="text-xs px-2.5 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200 font-medium">
+              Encrypted Authoring
             </span>
           </div>
           <p className="text-sm text-slate-600 mt-1">
-            Questions are end-to-end envelope-encrypted with dedicated keys per version and audited.
+            Create, edit, and submit examination questions.
           </p>
         </div>
 
         <div className="flex items-center space-x-2">
           <button
-            onClick={fetchQuestions}
+            onClick={() => fetchQuestions(true)}
             disabled={loading}
             className="inline-flex items-center space-x-1.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all disabled:opacity-50"
           >
@@ -173,7 +175,7 @@ export const ExaminerDashboard: React.FC<ExaminerDashboardProps> = ({
             className="inline-flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl font-semibold text-sm text-white bg-red-600 hover:bg-red-700 shadow-sm hover:shadow transition-all"
           >
             <PlusCircle className="w-4 h-4" />
-            <span>Author New Question</span>
+            <span>New Question</span>
           </button>
         </div>
       </div>
@@ -182,7 +184,7 @@ export const ExaminerDashboard: React.FC<ExaminerDashboardProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Authored</span>
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total</span>
             <FileText className="w-4 h-4 text-slate-700" />
           </div>
           <div className="text-2xl font-bold text-slate-900 mt-2">{questions.length}</div>
@@ -198,7 +200,7 @@ export const ExaminerDashboard: React.FC<ExaminerDashboardProps> = ({
 
         <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-emerald-700 uppercase tracking-wider">Submitted / Ready</span>
+            <span className="text-xs font-semibold text-emerald-700 uppercase tracking-wider">Submitted</span>
             <CheckCircle className="w-4 h-4 text-emerald-600" />
           </div>
           <div className="text-2xl font-bold text-emerald-600 mt-2">{submittedCount}</div>
@@ -221,7 +223,7 @@ export const ExaminerDashboard: React.FC<ExaminerDashboardProps> = ({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by ID (e.g. EV-PHY-000001), type, or Bloom level..."
+            placeholder="Search by ID, type, or cognitive level..."
             className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600"
           />
         </div>
@@ -247,15 +249,10 @@ export const ExaminerDashboard: React.FC<ExaminerDashboardProps> = ({
 
       {/* Question List */}
       {loading ? (
-        <div className="bg-white rounded-2xl border border-slate-200 p-16 text-center shadow-xs space-y-3">
-          <div className="inline-flex p-3 rounded-full bg-red-50 text-red-600 mb-1">
-            <Loader2 className="w-7 h-7 animate-spin" />
-          </div>
-          <h3 className="text-base font-bold text-slate-900">Loading Question Bank...</h3>
-          <p className="text-xs text-slate-500 max-w-md mx-auto font-mono">
-            Retrieving encrypted question bank metadata and blind cryptographic commitments
-          </p>
-        </div>
+        <LoadingState
+          title="Loading Question Bank..."
+          description="Retrieving encrypted question bank records, draft status, and evaluation history"
+        />
       ) : filteredQuestions.length === 0 ? (
         <div className="bg-white rounded-2xl p-12 text-center border border-dashed border-slate-300 shadow-xs">
           <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -265,14 +262,14 @@ export const ExaminerDashboard: React.FC<ExaminerDashboardProps> = ({
           <p className="text-sm text-slate-500 mt-1 max-w-sm mx-auto">
             {searchQuery
               ? 'Try modifying your search keywords or filter criteria.'
-              : 'You have not authored any questions yet. Start authoring your first encrypted question.'}
+              : 'No questions authored yet.'}
           </p>
           <button
             onClick={onCreateNew}
             className="mt-5 inline-flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-semibold bg-red-600 hover:bg-red-700 text-white shadow-sm transition-colors"
           >
             <PlusCircle className="w-4 h-4" />
-            <span>Create First Question</span>
+            <span>New Question</span>
           </button>
         </div>
       ) : (

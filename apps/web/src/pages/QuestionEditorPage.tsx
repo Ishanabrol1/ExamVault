@@ -366,7 +366,7 @@ export const QuestionEditorPage: React.FC<QuestionEditorPageProps> = ({
   return (
     <div className="space-y-6 pb-12">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-xs">
         <div className="flex items-center space-x-3">
           <button
             onClick={onBack}
@@ -386,7 +386,7 @@ export const QuestionEditorPage: React.FC<QuestionEditorPageProps> = ({
               )}
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              Markdown + LaTeX supported with live KaTeX rendering & Devanagari Hindi text.
+              Markdown, LaTeX math, and Devanagari script supported.
             </p>
           </div>
         </div>
@@ -435,7 +435,7 @@ export const QuestionEditorPage: React.FC<QuestionEditorPageProps> = ({
 
       {/* Version Diff View if toggled */}
       {showDiff && (
-        <div className="space-y-2 bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+        <div className="space-y-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-xs">
           <h3 className="text-sm font-bold text-slate-900 flex items-center space-x-2">
             <History className="w-4 h-4 text-red-600" />
             <span>Diff Against Version {existingVersion}</span>
@@ -454,7 +454,7 @@ export const QuestionEditorPage: React.FC<QuestionEditorPageProps> = ({
         {/* Left Column: Metadata & Syllabus */}
         <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-5 h-fit">
           <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-3">
-            Question Taxonomy & Metadata
+            Metadata & Taxonomy
           </h2>
 
           {/* Subject */}

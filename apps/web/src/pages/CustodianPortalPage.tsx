@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { apiRequest } from '../lib/api-client';
+import { LoadingState } from '../components/LoadingState';
 import {
   KeyRound,
   ShieldCheck,
@@ -203,20 +204,20 @@ export const CustodianPortalPage: React.FC = () => {
         <div>
           <div className="flex items-center space-x-3">
             <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-              Custodian Security Portal
+              Key Custodian Portal
             </h1>
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-800 border border-slate-200 font-semibold">
-              Threshold Key Custodian
+              Custodian
             </span>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Decentralized Shamir threshold key shares. Unseal locally in browser and submit during time-gated release window.
+            Manage key shares and submit authorizations during scheduled release windows.
           </p>
         </div>
         <div className="flex items-center space-x-2 shrink-0">
           <span className="flex items-center text-xs font-mono bg-red-50 text-red-700 border border-red-200 px-3 py-1.5 rounded-lg font-medium">
             <KeyRound className="w-3.5 h-3.5 mr-1.5 text-red-600" />
-            Shamir (k-of-n) Split Active
+            Threshold Active
           </span>
         </div>
       </div>
@@ -250,7 +251,7 @@ export const CustodianPortalPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <Key className="w-5 h-5 text-red-600" />
-            <h3 className="text-base font-bold text-slate-900">Browser X25519 Custodian Keypair</h3>
+            <h3 className="text-base font-bold text-slate-900">Custodian Keypair</h3>
           </div>
           {isEnrolled ? (
             <span className="px-3 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-full text-xs font-semibold flex items-center gap-1.5 self-start sm:self-auto">
@@ -322,12 +323,10 @@ export const CustodianPortalPage: React.FC = () => {
         </div>
 
         {loading ? (
-          <div className="py-12 flex flex-col items-center justify-center space-y-3">
-            <div className="p-3 bg-red-50 rounded-full border border-red-100">
-              <Loader2 className="w-6 h-6 animate-spin text-red-600" />
-            </div>
-            <p className="text-xs font-mono text-slate-500">Checking assigned sealed key shares...</p>
-          </div>
+          <LoadingState
+            title="Loading Custodian Key Vault..."
+            description="Verifying assigned threshold key shares, ceremony status, and decryption tokens"
+          />
         ) : assignedShares.length === 0 ? (
           <div className="p-12 text-center text-sm text-slate-500 space-y-1">
             <div className="font-medium text-slate-700">No sealed artifacts currently assigned to your custodian account.</div>

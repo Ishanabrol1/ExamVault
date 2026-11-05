@@ -17,6 +17,12 @@ import { BlindAnswerSubmitInput, ReviewSubmitInput } from '@examvault/shared';
 @Injectable()
 export class ReviewService {
   private readonly logger = new Logger(ReviewService.name);
+  private queueCache = new Map<string, { data: any; expiry: number }>();
+
+  public invalidateQueueCache(reviewerId?: string) {
+    if (reviewerId) this.queueCache.delete(reviewerId);
+    else this.queueCache.clear();
+  }
 
   constructor(
     private prisma: PrismaService,
@@ -228,6 +234,11 @@ export class ReviewService {
    * List reviewer assignments for current reviewer (anonymized)
    */
   async getReviewerQueue(reviewerId: string) {
+    const cached = this.queueCache.get(reviewerId);
+    if (cached && Date.now() < cached.expiry) {
+      return cached.data;
+    }
+
     const assignments = await this.prisma.reviewAssignment.findMany({
       where: { reviewerId },
       include: {
@@ -270,7 +281,7 @@ export class ReviewService {
       orderBy: [{ dueDate: 'asc' }],
     });
 
-    return assignments.map((a) => {
+    const formatted = assignments.map((a) => {
       const q = a.questionVersion?.question;
       return {
         ...a,
@@ -289,6 +300,8 @@ export class ReviewService {
         lockReason: q?.lockReason || null,
       };
     });
+    this.queueCache.set(reviewerId, { data: formatted, expiry: Date.now() + 15000 });
+    return formatted;
   }
 
   /**
@@ -479,6 +492,7 @@ export class ReviewService {
     input: BlindAnswerSubmitInput,
     reviewerId: string,
   ) {
+    this.invalidateQueueCache();
     const assignment = await this.prisma.reviewAssignment.findUniqueOrThrow({
       where: { id: assignmentId },
       include: {

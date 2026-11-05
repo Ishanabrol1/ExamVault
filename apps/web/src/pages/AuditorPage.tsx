@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiRequest } from '../lib/api-client';
+import { LoadingState } from '../components/LoadingState';
 import { formatDate } from '../lib/utils';
 import {
   ShieldCheck,
@@ -9,7 +10,6 @@ import {
   RefreshCw,
   ChevronDown,
   ChevronRight,
-  Loader2,
   Blocks,
   Database,
   Layers,
@@ -509,14 +509,14 @@ export const AuditorPage: React.FC = () => {
         <div>
           <div className="flex items-center space-x-2.5">
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-              Audit & Ledger Verification
+              Audit Ledger
             </h1>
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200 font-mono font-medium">
-              Design A (Fabric) + Design B (Signed Chain)
+              Tamper-Evident
             </span>
           </div>
           <p className="text-sm text-slate-600 mt-1">
-            Tamper-evident multi-ledger architecture: Permissioned Hyperledger Fabric + Ed25519 hash chain with external witness countersignature.
+            Cryptographic event trail and ledger integrity verification.
           </p>
         </div>
 
@@ -540,12 +540,12 @@ export const AuditorPage: React.FC = () => {
             {verifying ? (
               <>
                 <RefreshCw className="w-4 h-4 animate-spin text-red-400" />
-                <span>Verifying All Ledgers...</span>
+                <span>Verifying Integrity...</span>
               </>
             ) : (
               <>
                 <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                <span>Verify All Ledgers</span>
+                <span>Verify Integrity</span>
               </>
             )}
           </button>
@@ -843,15 +843,10 @@ export const AuditorPage: React.FC = () => {
 
           {/* Audit Log Table */}
           {loading ? (
-            <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-xs space-y-3">
-              <div className="inline-flex p-3 rounded-full bg-red-50 text-red-600 mb-1">
-                <Loader2 className="w-6 h-6 animate-spin" />
-              </div>
-              <h3 className="text-sm font-bold text-slate-900">Loading Cryptographic Audit Trail...</h3>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto font-mono">
-                Fetching Ed25519-signed entries, Fabric outbox receipts, and Merkle root anchors
-              </p>
-            </div>
+            <LoadingState
+              title="Loading Audit Trail..."
+              description="Fetching signed entries, outbox receipts, and Merkle root anchors"
+            />
           ) : events.length === 0 ? (
             <div className="bg-white rounded-2xl p-10 text-center border border-slate-200 text-slate-500 text-sm shadow-xs">
               No audit events matching current filters.

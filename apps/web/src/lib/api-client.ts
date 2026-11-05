@@ -35,8 +35,34 @@ export class ApiError extends Error {
   }
 }
 
-interface RequestOptions extends RequestInit {
+export interface RequestOptions extends RequestInit {
   params?: Record<string, string | number | boolean | undefined>;
+  bypassCache?: boolean;
+}
+
+// Client-Side High-Speed In-Memory Cache (SWR)
+interface CacheEntry {
+  data: any;
+  timestamp: number;
+}
+const apiCache = new Map<string, CacheEntry>();
+const CACHE_TTL_MS = 30000; // 30 seconds fresh cache
+const REVALIDATE_AFTER_MS = 6000; // Revalidate in background after 6 seconds
+
+export function clearApiCache() {
+  apiCache.clear();
+}
+
+export function invalidateApiCache(pattern?: string) {
+  if (!pattern) {
+    apiCache.clear();
+    return;
+  }
+  for (const key of apiCache.keys()) {
+    if (key.includes(pattern)) {
+      apiCache.delete(key);
+    }
+  }
 }
 
 export async function apiRequest<T = any>(
@@ -58,13 +84,49 @@ export async function apiRequest<T = any>(
     }
   }
 
+  const method = (options.method || 'GET').toUpperCase();
+  const isGet = method === 'GET';
+
+  // If not a GET request, invalidate cache because data is being modified
+  if (!isGet) {
+    apiCache.clear();
+  }
+
+  // Check cache for GET requests
+  if (isGet && !options.bypassCache) {
+    const cached = apiCache.get(url);
+    if (cached) {
+      const age = Date.now() - cached.timestamp;
+      if (age < CACHE_TTL_MS) {
+        // If data is getting slightly old (> 6s), revalidate silently in background
+        if (age > REVALIDATE_AFTER_MS) {
+          fetchFresh<T>(url, options)
+            .then((fresh) => {
+              apiCache.set(url, { data: fresh, timestamp: Date.now() });
+            })
+            .catch(() => {});
+        }
+        return cached.data as T;
+      }
+    }
+  }
+
+  const result = await fetchFresh<T>(url, options);
+
+  if (isGet) {
+    apiCache.set(url, { data: result, timestamp: Date.now() });
+  }
+
+  return result;
+}
+
+async function fetchFresh<T>(url: string, options: RequestOptions): Promise<T> {
   const headers = new Headers(options.headers || {});
   if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
   }
 
   const activeCsrfToken = getCsrfToken();
-  // Include CSRF token for non-GET/HEAD/OPTIONS methods
   if (activeCsrfToken && !['GET', 'HEAD', 'OPTIONS'].includes(options.method?.toUpperCase() || 'GET')) {
     headers.set('X-CSRF-Token', activeCsrfToken);
   }
@@ -77,7 +139,7 @@ export async function apiRequest<T = any>(
   const response = await fetch(url, {
     ...options,
     headers,
-    credentials: 'include', // sends and receives httpOnly session cookie
+    credentials: 'include',
   });
 
   if (!response.ok) {

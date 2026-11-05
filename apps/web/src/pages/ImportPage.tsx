@@ -93,14 +93,14 @@ export const ImportPage: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) =
         <div>
           <div className="flex items-center space-x-2.5">
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-              Bulk Question Import
+              Bulk Import
             </h1>
-            <span className="text-xs px-2.5 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200 font-mono font-medium">
-              Atomic Rollback
+            <span className="text-xs px-2.5 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200 font-medium">
+              Bulk Import
             </span>
           </div>
           <p className="text-sm text-slate-600 mt-1">
-            Import batches of exam questions with row-level validation. If any row is invalid, the entire batch rolls back.
+            Batch import exam questions from CSV with automated schema validation.
           </p>
         </div>
 
@@ -121,7 +121,7 @@ export const ImportPage: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) =
             {fileName ? `Loaded: ${fileName}` : 'Click or drag a CSV file here to import'}
           </span>
           <span className="text-xs text-slate-500 mt-1">
-            Supports UTF-8 encoded CSV with Devanagari Hindi Unicode and LaTeX formulas
+            Supports UTF-8 CSV with LaTeX formulas and Devanagari script.
           </span>
           <input type="file" accept=".csv,text/csv" onChange={handleFileChange} className="hidden" />
         </label>

@@ -34,6 +34,7 @@ import { canonicalizeJson } from '@examvault/audit-canonical';
 @Injectable()
 export class GenerationService {
   private readonly logger = new Logger(GenerationService.name);
+  private bankOverviewCache: { data: any; cachedAt: number } | null = null;
 
   constructor(
     private prisma: PrismaService,
@@ -64,6 +65,11 @@ export class GenerationService {
    * 4. Pending examiner submission
    */
   async getBankOverview() {
+    const now = Date.now();
+    if (this.bankOverviewCache && now - this.bankOverviewCache.cachedAt < 15000) {
+      return this.bankOverviewCache.data;
+    }
+
     const subjects = await this.prisma.subject.findMany({
       where: { isActive: true },
       select: { id: true, name: true, code: true },
@@ -168,10 +174,12 @@ export class GenerationService {
       };
     }
 
-    return {
+    const result = {
       overall,
       bySubject: bySubjectMap,
     };
+    this.bankOverviewCache = { data: result, cachedAt: now };
+    return result;
   }
 
   /**
