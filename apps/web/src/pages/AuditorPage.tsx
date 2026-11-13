@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { apiRequest } from '../lib/api-client';
+import {
+  apiRequest } from '../lib/api-client';
 import { LoadingState } from '../components/LoadingState';
 import { formatDate } from '../lib/utils';
 import {
@@ -21,7 +22,7 @@ import {
   Search,
   X,
   Download,
-} from 'lucide-react';
+} from '../lib/icons';
 
 interface AuditEventItem {
   id: string;

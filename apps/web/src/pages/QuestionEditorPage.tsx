@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { apiRequest } from '../lib/api-client';
+import {
+  apiRequest } from '../lib/api-client';
 import { KaTeXPreview } from '../components/KaTeXPreview';
 import { DiffViewer } from '../components/DiffViewer';
 import {
@@ -8,14 +9,14 @@ import {
   ArrowLeft,
   Plus,
   Trash2,
-  Image as ImageIcon,
+  ImageIcon,
   Eye,
   Edit3,
   History,
   AlertCircle,
   HelpCircle,
   FileCode,
-} from 'lucide-react';
+} from '../lib/icons';
 
 interface Subject {
   id: string;

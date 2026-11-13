@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { apiRequest } from '../lib/api-client';
+import {
+  apiRequest } from '../lib/api-client';
 import {
   UploadCloud,
   Download,
   FileSpreadsheet,
   CheckCircle2,
   AlertCircle,
-} from 'lucide-react';
+} from '../lib/icons';
 
 interface ImportError {
   row: number;

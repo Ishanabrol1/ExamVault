@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { apiRequest } from '../lib/api-client';
+import {
+  apiRequest } from '../lib/api-client';
 import { ModalPortal } from './ModalPortal';
 import {
   X,
@@ -9,7 +10,7 @@ import {
   GitBranch,
   Sliders,
   Lock,
-} from 'lucide-react';
+} from '../lib/icons';
 
 interface AuthorFeedbackModalProps {
   questionId: string;

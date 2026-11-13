@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { KaTeXPreview } from '../components/KaTeXPreview';
+import {
+  KaTeXPreview } from '../components/KaTeXPreview';
 import { apiRequest } from '../lib/api-client';
 import { LoadingState } from '../components/LoadingState';
 import { ModalPortal } from '../components/ModalPortal';
@@ -14,7 +15,7 @@ import {
   Sliders,
   Loader2,
   RefreshCw,
-} from 'lucide-react';
+} from '../lib/icons';
 
 interface Assignment {
   id: string;

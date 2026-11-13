@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
+import {
+  useAuth } from '../context/AuthContext';
 import { apiRequest } from '../lib/api-client';
 import { LoadingState } from '../components/LoadingState';
 import {
@@ -15,7 +16,7 @@ import {
   Loader2,
   X,
   FileCheck2,
-} from 'lucide-react';
+} from '../lib/icons';
 
 async function generateCustodianKeyPair(): Promise<{
   publicKeyHex: string;

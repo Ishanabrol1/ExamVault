@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { apiRequest } from '../lib/api-client';
+import {
+  apiRequest } from '../lib/api-client';
 import { formatDate } from '../lib/utils';
 import { ModalPortal } from '../components/ModalPortal';
 import { LoadingState } from '../components/LoadingState';
@@ -21,7 +22,7 @@ import {
   ShieldAlert,
   X,
   HelpCircle,
-} from 'lucide-react';
+} from '../lib/icons';
 
 interface UserItem {
   id: string;

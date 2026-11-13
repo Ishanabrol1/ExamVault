@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { apiRequest } from '../lib/api-client';
+import {
+  apiRequest } from '../lib/api-client';
 import { LoadingState } from '../components/LoadingState';
 import { ModalPortal } from '../components/ModalPortal';
 import {
@@ -13,7 +14,7 @@ import {
   Archive,
   Eye,
   Sliders,
-} from 'lucide-react';
+} from '../lib/icons';
 
 export const ModeratorConsole: React.FC = () => {
 

@@ -1,7 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { apiRequest } from '../lib/api-client';
+import {
+  apiRequest } from '../lib/api-client';
 import { LoadingState } from '../components/LoadingState';
-import { BarChart3, PieChart, Layers, ShieldCheck, Target, Activity, RefreshCw } from 'lucide-react';
+import { BarChart3,
+  PieChart,
+  Layers,
+  ShieldCheck,
+  Target,
+  Activity,
+  RefreshCw,
+} from '../lib/icons';
 
 interface BankStats {
   totalQuestions: number;

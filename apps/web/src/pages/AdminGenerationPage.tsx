@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
+import {
+  useAuth } from '../context/AuthContext';
 import { apiRequest } from '../lib/api-client';
 import { LoadingState } from '../components/LoadingState';
 import {
@@ -15,7 +16,7 @@ import {
   FileText,
   Check,
   X,
-} from 'lucide-react';
+} from '../lib/icons';
 
 export const AdminGenerationPage: React.FC = () => {
   const { user } = useAuth();

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
+import {
+  useAuth } from '../context/AuthContext';
 import {
   Shield,
   LogOut,
@@ -14,7 +15,7 @@ import {
   ChevronDown,
   Workflow,
   Lock,
-} from 'lucide-react';
+} from '../lib/icons';
 
 interface HeaderProps {
   currentTab: string;

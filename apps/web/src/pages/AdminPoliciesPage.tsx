@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
+import {
+  useAuth } from '../context/AuthContext';
 import { apiRequest } from '../lib/api-client';
 import { ModalPortal } from '../components/ModalPortal';
 import { LoadingState } from '../components/LoadingState';
@@ -17,7 +18,7 @@ import {
   Users,
   Scale,
   Clock,
-} from 'lucide-react';
+} from '../lib/icons';
 
 export const AdminPoliciesPage: React.FC = () => {
   const { user } = useAuth();

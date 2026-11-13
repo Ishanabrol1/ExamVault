@@ -1,6 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { KeyRound, Lock, Mail, ArrowRight, CheckCircle2, AlertCircle, Copy, Check } from 'lucide-react';
+import {
+  useAuth } from '../context/AuthContext';
+import { KeyRound,
+  Lock,
+  Mail,
+  ArrowRight,
+  CheckCircle2,
+  AlertCircle,
+  Copy,
+  Check,
+} from '../lib/icons';
 
 export const LoginPage: React.FC = () => {
   const { login, verifyMfa, cancelMfa, mfaPending } = useAuth();

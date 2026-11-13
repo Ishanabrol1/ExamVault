@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import {
+  QueryClient,
+  QueryClientProvider } from '@tanstack/react-query';
+import { AuthProvider,
+  useAuth } from './context/AuthContext';
 import { Header } from './components/Header';
 import { LoginPage } from './pages/LoginPage';
 import { ExaminerDashboard } from './pages/ExaminerDashboard';
@@ -16,7 +19,8 @@ import { AdminGenerationPage } from './pages/AdminGenerationPage';
 import { CustodianPortalPage } from './pages/CustodianPortalPage';
 import { VersionHistoryModal } from './components/VersionHistoryModal';
 import { AuthorFeedbackModal } from './components/AuthorFeedbackModal';
-import { Lock } from 'lucide-react';
+import { Lock,
+} from './lib/icons';
 
 const queryClient = new QueryClient({
   defaultOptions: {

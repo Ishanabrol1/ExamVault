@@ -12,11 +12,11 @@
   },
   "dependencies": {
     "@examvault/shared": "workspace:*",
+    "@phosphor-icons/react": "^2.1.10",
     "@tanstack/react-query": "^5.51.0",
     "clsx": "^2.1.1",
     "diff": "^5.2.0",
     "katex": "^0.16.11",
-    "lucide-react": "^0.428.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.52.1",

@@ -1,10 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { apiRequest } from '../lib/api-client';
+import {
+  apiRequest } from '../lib/api-client';
 import { formatDate } from '../lib/utils';
 import { DiffViewer } from './DiffViewer';
 import { KaTeXPreview } from './KaTeXPreview';
 import { ModalPortal } from './ModalPortal';
-import { X, History, ShieldCheck, Eye, GitCompare, User } from 'lucide-react';
+import { X,
+  History,
+  ShieldCheck,
+  Eye,
+  GitCompare,
+  User,
+} from '../lib/icons';
 
 interface VersionItem {
   id: string;

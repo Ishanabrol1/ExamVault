@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { apiRequest } from '../lib/api-client';
+import {
+  apiRequest } from '../lib/api-client';
 import { formatDate } from '../lib/utils';
 import { LoadingState } from '../components/LoadingState';
 import {
@@ -17,7 +18,7 @@ import {
   MessageSquare,
   RefreshCw,
   Lock,
-} from 'lucide-react';
+} from '../lib/icons';
 
 interface QuestionItem {
   id: string;
