@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DifficultyResolutionAction = exports.RetireQuestionSchema = exports.ReassignReviewerSchema = exports.ModeratorDecisionSchema = exports.DuplicateDispositionSchema = exports.ReviewSubmitSchema = exports.ReviewChecklistSchema = exports.BlindAnswerSubmitSchema = exports.QuickConfigurePolicySchema = exports.ApprovePolicySchema = exports.ProposePolicySchema = exports.ApprovalPolicySchema = exports.ApiResponseSchema = exports.PaginatedResponseSchema = exports.PaginationSchema = exports.BankStatisticsSchema = exports.AuditFilterSchema = exports.AuditVerifyResponseSchema = exports.AuditEventResponseSchema = exports.CsvImportResultSchema = exports.CsvImportRowSchema = exports.QuestionVersionResponseSchema = exports.QuestionFullResponseSchema = exports.QuestionMetadataResponseSchema = exports.UpdateQuestionSchema = exports.CreateQuestionSchema = exports.QuestionMetadataSchema = exports.AnswerKeySchema = exports.QuestionContentSchema = exports.QuestionOptionSchema = exports.CreateSubtopicSchema = exports.CreateTopicSchema = exports.CreateSubjectSchema = exports.CreateExamSchema = exports.UserResponseSchema = exports.MfaVerifySchema = exports.LoginSchema = exports.UpdateUserSchema = exports.CreateUserSchema = exports.AuditAction = exports.Language = exports.CognitiveLevel = exports.RetirementReason = exports.OriginalitySourceType = exports.OriginalityRiskLevel = exports.ReviewDecision = exports.DuplicateDisposition = exports.QuestionStatus = exports.QuestionType = exports.UserRole = void 0;
-exports.EligibleQuestionSchema = exports.ApprovalVerificationResponseSchema = exports.ApprovalRecordSchema = exports.CorpusImportSchema = exports.ConflictDeclarationSchema = exports.CreateNewVersionSchema = exports.ResolveDifficultyConflictSchema = void 0;
+exports.SubmitJustificationSchema = exports.DraftCheckResponseSchema = exports.DraftMatchSchema = exports.PastPaperCitationSchema = exports.MatchTypeEnum = exports.DraftCheckRequestSchema = exports.DuplicateHandlingSchema = exports.DisablePaperCorpusSchema = exports.CreatePaperCorpusSchema = exports.PaperCorpusValidationResultSchema = exports.PaperCorpusRowErrorSchema = exports.PaperCorpusJsonFileSchema = exports.PaperCorpusQuestionRowSchema = exports.PaperCorpusQuestionTypeEnum = exports.EligibleQuestionSchema = exports.ApprovalVerificationResponseSchema = exports.ApprovalRecordSchema = exports.CorpusImportSchema = exports.ConflictDeclarationSchema = exports.CreateNewVersionSchema = exports.ResolveDifficultyConflictSchema = void 0;
 const zod_1 = require("zod");
 // ── Enums ──────────────────────────────────────────────────────────
 exports.UserRole = zod_1.z.enum(['ADMIN', 'EXAMINER', 'REVIEWER', 'AUDITOR', 'MODERATOR', 'CUSTODIAN']);
@@ -111,6 +111,14 @@ exports.AuditAction = zod_1.z.enum([
     'QUESTION_REJECT',
     'PAPER_GENERATE',
     'KEY_RELEASE',
+    // Step 2 Add-On: corpus and draft-check audit events
+    'CORPUS_IMPORTED',
+    'CORPUS_DISABLED',
+    'CORPUS_INDEX_BUILT',
+    'DRAFT_CHECK_PERFORMED',
+    'DRAFT_CHECK_RATE_LIMITED',
+    'SUBMISSION_BLOCKED_PAST_PAPER',
+    'JUSTIFICATION_SUBMITTED',
 ]);
 // ── User Schemas ───────────────────────────────────────────────────
 exports.CreateUserSchema = zod_1.z.object({
@@ -384,6 +392,10 @@ exports.ProposePolicySchema = zod_1.z.object({
     exactMatchThreshold: zod_1.z.number().min(0).max(1).default(1.0),
     highSimilarityThreshold: zod_1.z.number().min(0).max(1).default(0.85),
     mediumSimilarityThreshold: zod_1.z.number().min(0).max(1).default(0.60),
+    // Step 2 Add-On: past-paper policy fields
+    pastPaperMatchAction: zod_1.z.enum(['WARN', 'BLOCK_UNLESS_JUSTIFIED', 'BLOCK']).default('BLOCK_UNLESS_JUSTIFIED'),
+    mediumMatchAction: zod_1.z.enum(['WARN', 'NONE']).default('WARN'),
+    treatNumberChangedAsDuplicate: zod_1.z.boolean().default(true),
 });
 exports.ApprovePolicySchema = zod_1.z.object({
     policyId: zod_1.z.string().uuid(),
@@ -511,5 +523,116 @@ exports.EligibleQuestionSchema = zod_1.z.object({
     negativeMarks: zod_1.z.number(),
     contentCommitment: zod_1.z.string(),
     approvedAt: zod_1.z.string().datetime(),
+});
+// ── Step 2 Add-On: Previous-Year Corpus Schemas ────────────────────
+exports.PaperCorpusQuestionTypeEnum = zod_1.z.enum(['MCQ_SINGLE', 'MCQ_MULTI', 'INTEGER']);
+const CURRENT_YEAR_SCHEMA = new Date().getFullYear();
+/** Shared validation for one past-paper question row (JSON or CSV). */
+exports.PaperCorpusQuestionRowSchema = zod_1.z.object({
+    source_exam: zod_1.z.string().min(1, 'source_exam required').max(255),
+    year: zod_1.z.coerce.number().int().min(1950).max(CURRENT_YEAR_SCHEMA + 1),
+    shift: zod_1.z.string().max(100).optional().default(''),
+    paper_code: zod_1.z.string().max(100).optional().default(''),
+    question_no: zod_1.z.string().min(1).max(50),
+    language: zod_1.z.string().min(2).max(10),
+    question_type: exports.PaperCorpusQuestionTypeEnum,
+    stem: zod_1.z.string().min(1).max(20000),
+    options: zod_1.z.array(zod_1.z.string().min(1).max(5000)).max(6).optional(),
+    subject: zod_1.z.string().max(255).optional().default(''),
+    topic: zod_1.z.string().max(255).optional().default(''),
+    correct_answer: zod_1.z.string().max(100).optional().default(''),
+}).superRefine((data, ctx) => {
+    if (data.question_type !== 'INTEGER') {
+        if (!data.options || data.options.length < 2) {
+            ctx.addIssue({ code: zod_1.z.ZodIssueCode.custom, message: 'MCQ questions require 2–6 options', path: ['options'] });
+        }
+    }
+    else {
+        if (data.options && data.options.length > 0) {
+            ctx.addIssue({ code: zod_1.z.ZodIssueCode.custom, message: 'INTEGER questions must not have options', path: ['options'] });
+        }
+    }
+});
+/** JSON file top-level format */
+exports.PaperCorpusJsonFileSchema = zod_1.z.object({
+    corpus: zod_1.z.object({
+        name: zod_1.z.string().min(1).max(255),
+        licence_note: zod_1.z.string().max(2000).optional(),
+    }),
+    questions: zod_1.z.array(exports.PaperCorpusQuestionRowSchema).min(1).max(200000),
+});
+/** Validation error for a row */
+exports.PaperCorpusRowErrorSchema = zod_1.z.object({
+    row: zod_1.z.number().int(),
+    field: zod_1.z.string(),
+    message: zod_1.z.string(),
+});
+/** Result of corpus validation */
+exports.PaperCorpusValidationResultSchema = zod_1.z.object({
+    valid: zod_1.z.boolean(),
+    totalRows: zod_1.z.number().int(),
+    validRows: zod_1.z.number().int(),
+    errorCount: zod_1.z.number().int(),
+    errors: zod_1.z.array(exports.PaperCorpusRowErrorSchema),
+    withinFileDupeCount: zod_1.z.number().int(),
+    crossCorpusDupeCount: zod_1.z.number().int(),
+    withinFileDupes: zod_1.z.array(zod_1.z.object({ row: zod_1.z.number(), key: zod_1.z.string() })),
+    crossCorpusDupes: zod_1.z.array(zod_1.z.object({ row: zod_1.z.number(), existingCorpusId: zod_1.z.string(), key: zod_1.z.string() })),
+    preview: zod_1.z.array(zod_1.z.any()).max(20),
+});
+/** Create corpus request body */
+exports.CreatePaperCorpusSchema = zod_1.z.object({
+    name: zod_1.z.string().min(1).max(255),
+    licenceNote: zod_1.z.string().max(2000).optional(),
+    sourceLabel: zod_1.z.string().min(1).max(255),
+});
+/** Disable corpus request (requires step-up MFA) */
+exports.DisablePaperCorpusSchema = zod_1.z.object({
+    reason: zod_1.z.string().min(10, 'Reason must be at least 10 characters').max(1000),
+    totpToken: zod_1.z.string().length(6).regex(/^\d{6}$/),
+});
+/** Duplicate handling on commit */
+exports.DuplicateHandlingSchema = zod_1.z.object({
+    withinFileStrategy: zod_1.z.enum(['SKIP', 'KEEP']).default('SKIP'),
+    crossCorpusStrategy: zod_1.z.enum(['SKIP', 'KEEP']).default('SKIP'),
+});
+// ── Step 2 Add-On: Draft Check API Schemas ─────────────────────────
+exports.DraftCheckRequestSchema = zod_1.z.object({
+    stem: zod_1.z.string().min(1).max(20000),
+    options: zod_1.z.array(zod_1.z.string().min(1).max(5000)).max(6).optional().default([]),
+    type: exports.QuestionType,
+    language: zod_1.z.string().min(2).max(10).optional().default('en'),
+    subject: zod_1.z.string().max(255).optional(),
+    topic: zod_1.z.string().max(255).optional(),
+});
+exports.MatchTypeEnum = zod_1.z.enum(['EXACT', 'NEAR', 'NUMBERS_CHANGED', 'OPTIONS_MATCH', 'SEMANTIC']);
+exports.PastPaperCitationSchema = zod_1.z.object({
+    source_exam: zod_1.z.string(),
+    year: zod_1.z.number().int(),
+    shift: zod_1.z.string().nullable().optional(),
+    paper_code: zod_1.z.string().nullable().optional(),
+    question_no: zod_1.z.string(),
+});
+exports.DraftMatchSchema = zod_1.z.object({
+    sourceType: zod_1.z.enum(['PAST_PAPER', 'BANK']),
+    matchType: exports.MatchTypeEnum,
+    riskLevel: exports.OriginalityRiskLevel,
+    overallScore: zod_1.z.number().min(0).max(1),
+    // PAST_PAPER only: full citation and highlighted spans
+    citation: exports.PastPaperCitationSchema.optional(),
+    matchedText: zod_1.z.string().optional(),
+    spans: zod_1.z.array(zod_1.z.object({ start: zod_1.z.number(), end: zod_1.z.number(), text: zod_1.z.string() })).optional(),
+    // BANK: only generic message, no code/text/fine-score
+    bankMessage: zod_1.z.string().optional(),
+});
+exports.DraftCheckResponseSchema = zod_1.z.object({
+    riskLevel: exports.OriginalityRiskLevel,
+    matches: zod_1.z.array(exports.DraftMatchSchema).max(5),
+    checkedAt: zod_1.z.string().datetime(),
+});
+// ── Step 2 Add-On: Examiner Justification (BLOCK_UNLESS_JUSTIFIED) ─
+exports.SubmitJustificationSchema = zod_1.z.object({
+    justification: zod_1.z.string().min(50, 'Justification must be at least 50 characters').max(5000),
+    pastPaperCitation: exports.PastPaperCitationSchema.optional(),
 });
 //# sourceMappingURL=schemas.js.map

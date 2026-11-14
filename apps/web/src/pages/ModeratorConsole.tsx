@@ -1083,7 +1083,9 @@ export const ModeratorConsole: React.FC = () => {
               {selectedItem.originalityReport?.matches?.map((m: any, idx: number) => (
                 <div key={idx} className="bg-white p-3 rounded border border-slate-200 space-y-1">
                   <div className="flex justify-between font-mono">
-                    <span className="font-bold text-slate-800">{m.sourceType}: {m.sourceReference}</span>
+                    <span className="font-bold text-slate-800">
+                      {m.sourceType === 'PAST_PAPER' ? 'Previous-Year Paper' : 'Question Bank'}: {m.sourceReference}
+                    </span>
                     <span className="text-red-700 font-bold">{(m.overallScore * 100).toFixed(1)}% match</span>
                   </div>
                   {m.sourceTextSnippet && (
@@ -1094,6 +1096,16 @@ export const ModeratorConsole: React.FC = () => {
                 </div>
               ))}
             </div>
+
+            {/* Examiner Justification if provided */}
+            {selectedItem.originalityReport?.examinerJustification && (
+              <div className="p-3.5 bg-blue-50/70 rounded-xl border border-blue-200 text-xs space-y-1">
+                <span className="font-bold text-blue-900 block">Examiner Justification:</span>
+                <p className="text-slate-700 italic bg-white p-2.5 rounded border border-blue-100 leading-relaxed">
+                  "{selectedItem.originalityReport.examinerJustification}"
+                </p>
+              </div>
+            )}
 
             {/* Disposition Form */}
             <div className="space-y-4 pt-2">

@@ -16,6 +16,7 @@ import { ReviewerWorkspace } from './pages/ReviewerWorkspace';
 import { ModeratorConsole } from './pages/ModeratorConsole';
 import { AdminPoliciesPage } from './pages/AdminPoliciesPage';
 import { AdminGenerationPage } from './pages/AdminGenerationPage';
+import { AdminCorpusPage } from './pages/AdminCorpusPage';
 import { CustodianPortalPage } from './pages/CustodianPortalPage';
 import { VersionHistoryModal } from './components/VersionHistoryModal';
 import { AuthorFeedbackModal } from './components/AuthorFeedbackModal';
@@ -61,6 +62,7 @@ const isTabAllowedForRole = (tab: string, role?: string): boolean => {
         'admin-syllabus',
         'admin-workflow',
         'admin-policies',
+        'admin-corpus',
         'audit',
         'stats',
       ].includes(tab);
@@ -188,6 +190,7 @@ const MainLayout: React.FC = () => {
         )}
         {resolvedTab === 'admin-generation' && <AdminGenerationPage />}
         {resolvedTab === 'admin-policies' && <AdminPoliciesPage />}
+        {resolvedTab === 'admin-corpus' && <AdminCorpusPage />}
 
         {/* Custodian Portal Tab */}
         {resolvedTab === 'custodian-portal' && <CustodianPortalPage />}

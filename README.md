@@ -57,25 +57,62 @@ pnpm test
 ### 7. Run Originality Service & Evaluation Harness
 The originality service checks submitted questions against in-memory bank questions and imported past paper corpora using MinHash LSH, TF-IDF cosine similarity, LaTeX/Devanagari normalization, and option scrambling detection.
 
-To run the automated evaluation harness (evaluating 365+ synthetic question pairs across 7 categories and outputting the Markdown report & CSV):
+To run the automated evaluation harness over a synthetic corpus of **5,000 questions** across 8 variation categories (reporting precision, recall, F1, and p50/p95/p99 latency):
 ```bash
 cd apps/originality-service
 pip install -r requirements.txt
 python evaluation_harness.py
 ```
-*(Results are written to `apps/originality-service/originality_evaluation_report.md` and `.csv`)*.
+*(Results and benchmarks are generated in `apps/originality-service/originality_evaluation_report.md` and `originality_evaluation_results.csv`)*.
 
-To verify outbound network isolation and log confidentiality:
+To verify outbound network isolation, draft check confidentiality, and bank masking:
 ```bash
 python test_isolation.py
 ```
 
-### 8. Start Development Servers
+### 8. Previous-Year Question Corpus & Live Originality Feedback
+
+ExamVault enables administrators to upload official reference question papers (JSON or CSV) and delivers sub-second live advisory duplicate feedback to examiners as they author questions:
+
+#### (a) Intelligent Auto-Adapting Corpus Parser & Formats
+- **Auto-Adapting CSV Engine (`corpus-parser.ts`)**:
+  - **Flexible Schema Detection**: In addition to the standard 17-column format, the engine automatically detects and parses arbitrary 2-column or unstructured files (e.g. `eng, Subject`).
+  - **Embedded Option Extraction**: Automatically detects and regex-extracts embedded options (`A.`, `B.`, `C.`, `D.`) from raw stems, stripping prefixes and setting smart defaults (`MCQ_SINGLE`, `en`).
+  - **Column Aliasing**: Maps variations such as `stem`, `question`, `eng`, `content`, `subject`, `Subject` without manual configuration.
+- **Standard RFC 4180 CSV**: UTF-8 (with or without BOM), standard columns: `source_exam,year,shift,paper_code,question_no,language,question_type,stem,option_1..option_6,subject,topic,correct_answer`.
+- **Canonical JSON**: Object with `{"corpus": {"name", "licence_note", "source_label"}, "questions": [...]}`.
+- **Downloadable Templates**: Formatted CSV template and JSON example available directly on the **Past Papers** portal (`/corpus/paper-corpora/template/csv` and `/template/json`).
+
+#### (b) Admin Corpus Management Portal
+- **All-or-Nothing Streaming Validation**: Validates files up to 25 MB and 200,000 questions with comprehensive row-level error reporting before database persistence.
+- **High-Throughput Ingestion**: Batch insertion with extended transaction windows ensures smooth import of 40,000+ past-paper questions into PostgreSQL without timeout.
+- **Duplicate Handling**: Real-time detection of duplicates within the file and against existing corpora, with administrator selection to `SKIP` or `KEEP`.
+- **Asynchronous Background Indexing**: Built idempotently; failed builds never leave a corrupt index active.
+- **Audited Decommissioning**: Disabling a corpus requires written justification and step-up MFA, instantly removing documents from live queries.
+
+#### (c) Dual-Index Originality Engine (`apps/originality-service`)
+- **Dual-Index Separation**:
+  - `BankIndex`: Strict memory-only RAM index for unreleased bank questions (never stored on disk).
+  - `CorpusIndex`: Disk-persisted reference corpus index storing public previous-year questions (45,000+ items).
+- **Sub-Millisecond Candidate Retrieval (<5ms)**:
+  - Inverted token indexing and MinHash LSH bucket querying locate candidates in microseconds without costly linear scans or synchronous TF-IDF refits.
+- **Stem Substring & Token Containment Engine**:
+  - Compares token containment and sentence substrings, enabling the detector to flag duplicates ($90\%\text{--}100\%$ match) even when an examiner has only typed the question prefix without options.
+- **Differential Privacy & Probing Protection**:
+  - Past-paper matches disclose full official examination citations (`source_exam`, `year`, `question_no`) and matched text snippets.
+  - Matches against unreleased question bank items are masked (`"Possible duplicate in the question bank"`) with no question IDs, text, or fine scores leaked to prevent probing attacks.
+
+#### (d) Examiner Live Advisory Feedback UI
+- **Compact Inline Advisory Bar**: Positioned directly above the question stem input box with dynamic risk badges (`0% Match (Original)`, `60% Similarity (Medium)`, `85% Similarity (High Risk)`, `100% Duplicate Match`).
+- **Interactive Details Drawer**: Expandable drawer displaying matched citations, snippet text, and highlighted overlap spans.
+- **Policy Enforcement & Justification Workflow**: Dual-admin configured actions (`BLOCK`, `BLOCK_UNLESS_JUSTIFIED`, `WARN`). `BLOCK_UNLESS_JUSTIFIED` opens a justification modal requiring a minimum 50-character encrypted rationale, routing the question to `DUPLICATE_FLAGGED` for moderator review.
+
+### 9. Start Development Servers
 ```bash
 pnpm dev
 ```
 
-### 9. Open Application
+### 10. Open Application
 - **Web Application**: [http://localhost:5173](http://localhost:5173)
 - **API Swagger Documentation**: [http://localhost:3001/api/docs](http://localhost:3001/api/docs)
 - **MinIO Console**: [http://localhost:9001](http://localhost:9001) (`examvault_minio` / `examvault_minio_secret`)

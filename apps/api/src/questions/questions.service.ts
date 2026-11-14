@@ -354,7 +354,12 @@ export class QuestionsService {
   /**
    * Submit a question (DRAFT -> SUBMITTED -> SCREENING via background job)
    */
-  async submit(questionId: string, userId: string) {
+  async submit(
+    questionId: string,
+    userId: string,
+    justification?: string,
+    pastPaperCitation?: any,
+  ) {
     const question = await this.prisma.question.findUniqueOrThrow({
       where: { id: questionId },
       include: {
@@ -375,6 +380,43 @@ export class QuestionsService {
     const currentVersion = question.versions[0];
     if (currentVersion.status !== 'DRAFT') {
       throw new BadRequestException('Only DRAFT questions can be submitted');
+    }
+
+    // If justification is provided for a past-paper match, store it encrypted
+    if (justification) {
+      const encJust = await this.crypto.encrypt(
+        JSON.stringify({ justification }),
+        `justification:${currentVersion.id}`,
+      );
+      await this.prisma.examinerJustification.upsert({
+        where: { questionVersionId: currentVersion.id },
+        create: {
+          questionVersionId: currentVersion.id,
+          examinerId: userId,
+          encryptedJustification: encJust.ciphertext,
+          justificationNonce: encJust.nonce,
+          justificationTag: encJust.tag,
+          encryptedJustKey: encJust.wrappedKey,
+          keyId: encJust.keyId,
+          pastPaperCitation: pastPaperCitation || null,
+        },
+        update: {
+          encryptedJustification: encJust.ciphertext,
+          justificationNonce: encJust.nonce,
+          justificationTag: encJust.tag,
+          encryptedJustKey: encJust.wrappedKey,
+          keyId: encJust.keyId,
+          pastPaperCitation: pastPaperCitation || null,
+        },
+      });
+
+      await this.audit.log({
+        actorId: userId,
+        action: 'JUSTIFICATION_SUBMITTED',
+        targetType: 'question_version',
+        targetId: currentVersion.id,
+        metadata: { versionNo: currentVersion.versionNo, hasCitation: !!pastPaperCitation },
+      });
     }
 
     await this.prisma.questionVersion.update({

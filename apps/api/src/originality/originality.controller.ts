@@ -10,7 +10,11 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { Request } from 'express';
 import { Roles } from '../auth/auth.guard';
 import { OriginalityService } from './originality.service';
-import { DuplicateDispositionSchema } from '@examvault/shared';
+import {
+  DuplicateDispositionSchema,
+  DraftCheckRequestSchema,
+  SubmitJustificationSchema,
+} from '@examvault/shared';
 
 @ApiTags('Originality')
 @Controller('originality')
@@ -47,6 +51,36 @@ export class OriginalityController {
   ) {
     const parsed = DuplicateDispositionSchema.parse(body);
     const result = await this.originalityService.dispositionDuplicate(
+      versionId,
+      parsed,
+      req.userId!,
+    );
+    return { success: true, data: result };
+  }
+
+  @Post('check-draft')
+  @Roles('EXAMINER', 'ADMIN')
+  @ApiOperation({ summary: 'Live advisory originality check for draft question (EXAMINER only)' })
+  async checkDraft(@Body() body: any, @Req() req: Request) {
+    const parsed = DraftCheckRequestSchema.parse(body);
+    const result = await this.originalityService.checkDraft(
+      parsed,
+      req.userId!,
+      (req as any).userPseudonym,
+    );
+    return { success: true, data: result };
+  }
+
+  @Post('justification/:versionId')
+  @Roles('EXAMINER')
+  @ApiOperation({ summary: 'Submit examiner justification for a flagged question version' })
+  async submitJustification(
+    @Param('versionId') versionId: string,
+    @Body() body: any,
+    @Req() req: Request,
+  ) {
+    const parsed = SubmitJustificationSchema.parse(body);
+    const result = await this.originalityService.submitJustification(
       versionId,
       parsed,
       req.userId!,

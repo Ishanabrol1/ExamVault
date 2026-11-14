@@ -192,6 +192,14 @@ export const Header: React.FC<HeaderProps> = ({ currentTab, onSelectTab }) => {
               </div>
 
               <button
+                onClick={() => onSelectTab('admin-corpus')}
+                className={getNavButtonClass('admin-corpus')}
+              >
+                <FileText className="w-3.5 h-3.5 text-red-500" />
+                <span>Past Papers</span>
+              </button>
+
+              <button
                 onClick={() => onSelectTab('admin-policies')}
                 className={getNavButtonClass('admin-policies')}
               >

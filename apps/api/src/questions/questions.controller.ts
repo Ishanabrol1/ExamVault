@@ -42,8 +42,17 @@ export class QuestionsController {
   @Patch(':id/submit')
   @Roles('EXAMINER')
   @ApiOperation({ summary: 'Submit a question (EXAMINER only)' })
-  async submit(@Param('id') id: string, @Req() req: Request) {
-    const result = await this.questionsService.submit(id, req.userId!);
+  async submit(
+    @Param('id') id: string,
+    @Body() body: any,
+    @Req() req: Request,
+  ) {
+    const result = await this.questionsService.submit(
+      id,
+      req.userId!,
+      body?.justification,
+      body?.pastPaperCitation,
+    );
     return { success: true, data: result };
   }
 

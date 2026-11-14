@@ -1,0 +1,64 @@
+{
+  "corpus": {
+    "name": "JEE Advanced 2023",
+    "licence_note": "Questions sourced from NTA official papers. For quality-assurance use only."
+  },
+  "questions": [
+    {
+      "source_exam": "JEE Advanced",
+      "year": 2023,
+      "shift": "Morning",
+      "paper_code": "Paper-1",
+      "question_no": "1",
+      "language": "en",
+      "question_type": "MCQ_SINGLE",
+      "stem": "A particle of mass 2 kg moves along the x-axis with velocity 10 m/s. Its kinetic energy is:",
+      "options": ["100 J", "200 J", "50 J", "25 J"],
+      "subject": "Physics",
+      "topic": "Mechanics",
+      "correct_answer": "100 J"
+    },
+    {
+      "source_exam": "JEE Advanced",
+      "year": 2023,
+      "shift": "Morning",
+      "paper_code": "Paper-1",
+      "question_no": "2",
+      "language": "en",
+      "question_type": "MCQ_MULTI",
+      "stem": "Which of the following are vector quantities?",
+      "options": ["Displacement", "Speed", "Force", "Velocity", "Mass"],
+      "subject": "Physics",
+      "topic": "Kinematics",
+      "correct_answer": "Displacement,Force,Velocity"
+    },
+    {
+      "source_exam": "JEE Advanced",
+      "year": 2023,
+      "shift": "Morning",
+      "paper_code": "Paper-1",
+      "question_no": "3",
+      "language": "en",
+      "question_type": "INTEGER",
+      "stem": "A convex lens of focal length 20 cm is placed at a distance of 60 cm from a screen. The object distance (in cm) is:",
+      "subject": "Physics",
+      "topic": "Optics",
+      "correct_answer": "30"
+    },
+    {
+      "source_exam": "NEET",
+      "year": 2023,
+      "shift": "Afternoon",
+      "paper_code": "Paper-1",
+      "question_no": "1",
+      "language": "hi",
+      "question_type": "MCQ_SINGLE",
+      "stem": "2 kg द्रव्यमान का एक कण x-अक्ष के अनुदिश 10 m/s के वेग से गति करता है। इसकी गतिज ऊर्जा है:",
+      "options": ["100 J", "200 J", "50 J", "25 J"],
+      "subject": "Physics",
+      "topic": "Mechanics",
+      "correct_answer": "100 J"
+    }
+  ]
+}
+

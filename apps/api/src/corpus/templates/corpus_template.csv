@@ -1,0 +1,6 @@
+source_exam,year,shift,paper_code,question_no,language,question_type,stem,option_1,option_2,option_3,option_4,option_5,option_6,subject,topic,correct_answer
+JEE Advanced,2023,Morning,Paper-1,1,en,MCQ_SINGLE,"A particle of mass 2 kg moves along the x-axis with velocity 10 m/s. Its kinetic energy is:",100 J,200 J,50 J,25 J,,,Physics,Mechanics,100 J
+JEE Advanced,2023,Morning,Paper-1,2,en,MCQ_MULTI,"Which of the following are vector quantities?",Displacement,Speed,Force,Velocity,Mass,,Physics,Kinematics,"Displacement,Force,Velocity"
+JEE Advanced,2023,Morning,Paper-1,3,en,INTEGER,"A convex lens of focal length 20 cm is placed at a distance of 60 cm from a screen. The object distance (in cm) is:",,,,,,,,Physics,Optics,30
+NEET,2023,Afternoon,Paper-1,1,hi,MCQ_SINGLE,"2 kg द्रव्यमान का एक कण x-अक्ष के अनुदिश 10 m/s के वेग से गति करता है। इसकी गतिज ऊर्जा है:",100 J,200 J,50 J,25 J,,,Physics,Mechanics,100 J
+

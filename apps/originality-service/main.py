@@ -6,7 +6,7 @@ from fastapi import FastAPI, HTTPException, Header, Depends
 from pydantic import BaseModel, Field
 from detector import OriginalityEngine, IndexedDocument
 
-# Configure privacy-preserving logging: IDs and scores ONLY, NEVER question text
+# Configure privacy-preserving logging: IDs and scores ONLY, NEVER question or draft text
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] [ORIGINALITY_SVC] %(message)s'
@@ -19,10 +19,10 @@ INTERNAL_SERVICE_TOKEN = os.getenv("ORIGINALITY_SERVICE_TOKEN", "examvault_inter
 app = FastAPI(
     title="ExamVault Originality & Copy Checker Service",
     description="Internal, isolated originality detection engine for examination questions",
-    version="1.0.0"
+    version="2.0.0"
 )
 
-# Global in-memory engine (never writes unreleased question plaintext to disk)
+# Unified engine: bank (in-memory) + corpus (disk-persisted)
 engine = OriginalityEngine(lsh_threshold=0.5)
 
 # ── Authentication Dependency ──────────────────────────────────────
@@ -46,6 +46,20 @@ class CheckQuestionRequest(BaseModel):
     exactMatchThreshold: float = 1.0
     highSimilarityThreshold: float = 0.85
     mediumSimilarityThreshold: float = 0.60
+    treatNumberChangedAsDuplicate: bool = True
+
+class CheckDraftRequest(BaseModel):
+    stem: str
+    options: List[str] = Field(default_factory=list)
+    type: str = "MCQ_SINGLE"
+    language: str = "en"
+    subject: Optional[str] = ""
+    topic: Optional[str] = ""
+    exactMatchThreshold: float = 1.0
+    highSimilarityThreshold: float = 0.85
+    mediumSimilarityThreshold: float = 0.60
+    treatNumberChangedAsDuplicate: bool = True
+    examinerPseudonym: Optional[str] = None
 
 class IndexFeedItem(BaseModel):
     docId: str
@@ -56,28 +70,41 @@ class IndexFeedItem(BaseModel):
     options: List[str] = Field(default_factory=list)
     parentVersionId: Optional[str] = None
     authorId: Optional[str] = None
+    citation: Optional[Dict[str, Any]] = None
 
 class IndexFeedBatchRequest(BaseModel):
     items: List[IndexFeedItem]
+
+class CorpusFeedBatchRequest(BaseModel):
+    corpusId: str
+    items: List[IndexFeedItem]
+    rebuildTfidf: bool = False
+
+class CorpusDisableRequest(BaseModel):
+    corpusId: str
 
 # ── API Endpoints ──────────────────────────────────────────────────
 
 @app.get("/health")
 def health_check():
-    """Service health and in-memory index metrics"""
+    """Service health and index metrics for both bank and corpus"""
+    bank_count = len(engine.bank.documents)
+    corpus_count = len(engine.corpus.documents)
     return {
         "status": "HEALTHY",
         "service": "originality-service",
-        "version": "1.0.0",
-        "indexedDocumentsCount": len(engine.documents),
+        "version": "2.0.0",
+        "indexedBankDocumentsCount": bank_count,
+        "indexedCorpusDocumentsCount": corpus_count,
+        "indexedDocumentsCount": bank_count + corpus_count,
         "networkIsolationActive": True,
     }
 
 @app.post("/check", dependencies=[Depends(verify_service_token)])
 def check_originality(req: CheckQuestionRequest):
     """
-    Screen a question version against the bank and public corpora.
-    Logs ID, version, and resulting score — NEVER question text!
+    Screen a submitted question version against the bank and past-paper corpus.
+    Logs ID, version, risk and scores — NEVER question text!
     """
     result = engine.check_question(
         question_id=req.questionId,
@@ -89,6 +116,7 @@ def check_originality(req: CheckQuestionRequest):
         exact_match_threshold=req.exactMatchThreshold,
         high_threshold=req.highSimilarityThreshold,
         medium_threshold=req.mediumSimilarityThreshold,
+        treat_number_changed_as_duplicate=req.treatNumberChangedAsDuplicate,
     )
 
     # Privacy-preserving logging
@@ -100,8 +128,42 @@ def check_originality(req: CheckQuestionRequest):
 
     return result
 
+@app.post("/check-draft", dependencies=[Depends(verify_service_token)])
+def check_draft_endpoint(req: CheckDraftRequest):
+    """
+    Live advisory check for an examiner writing a draft question.
+    Drafts are NOT stored, NOT written to disk, NOT added to bank index, and NEVER logged.
+    Logs ONLY examiner pseudonym, risk level, and match count.
+    Visibility masking is strictly enforced:
+      - PAST_PAPER: full citation, matched text snippet, overlapping spans
+      - BANK: generic message only, NO code, NO text, NO fine score
+    """
+    result = engine.check_draft(
+        stem=req.stem,
+        options=req.options,
+        question_type=req.type,
+        language=req.language,
+        subject=req.subject or "",
+        topic=req.topic or "",
+        exact_match_threshold=req.exactMatchThreshold,
+        high_threshold=req.highSimilarityThreshold,
+        medium_threshold=req.mediumSimilarityThreshold,
+        treat_number_changed_as_duplicate=req.treatNumberChangedAsDuplicate,
+        max_results=5,
+    )
+
+    # Privacy-preserving logging: ONLY actor pseudonym, risk level, match count
+    actor = req.examinerPseudonym or "EXAMINER_ANONYMOUS"
+    logger.info(
+        f"DRAFT_CHECK actor={actor} "
+        f"risk={result['riskLevel']} "
+        f"matches={result['totalMatches']}"
+    )
+
+    return result
+
 @app.post("/index/feed", dependencies=[Depends(verify_service_token)])
-def feed_index_batch(req: IndexFeedBatchRequest):
+def feed_bank_index_batch(req: IndexFeedBatchRequest):
     """
     Populate or update in-memory bank index from internal authenticated feed.
     """
@@ -115,27 +177,83 @@ def feed_index_batch(req: IndexFeedBatchRequest):
             stem=item.stem,
             options=item.options,
             parent_version_id=item.parentVersionId,
-            author_id=item.authorId
+            author_id=item.authorId,
+            citation=item.citation,
         )
         engine.add_document(doc)
         count += 1
 
-    engine.rebuild_tfidf()
-    logger.info(f"FEED_BATCH ingested={count} total_in_memory={len(engine.documents)}")
-    return {"success": True, "ingested": count, "totalIndexed": len(engine.documents)}
+    engine.bank.rebuild_tfidf()
+    logger.info(f"FEED_BATCH ingested={count} total_bank={len(engine.bank.documents)}")
+    return {"success": True, "ingested": count, "totalIndexed": len(engine.bank.documents)}
+
+@app.post("/corpus/feed", dependencies=[Depends(verify_service_token)])
+def feed_corpus_batch(req: CorpusFeedBatchRequest):
+    """
+    Populate disk-persisted past-paper corpus index.
+    """
+    docs = []
+    for item in req.items:
+        doc = IndexedDocument(
+            doc_id=item.docId,
+            source_type="PAST_PAPER",
+            source_reference=item.sourceReference,
+            version_no=item.versionNo,
+            stem=item.stem,
+            options=item.options,
+            citation=item.citation,
+        )
+        docs.append(doc)
+
+    engine.corpus.add_corpus_batch(req.corpusId, docs)
+    if req.rebuildTfidf:
+        engine.corpus.rebuild_tfidf()
+    logger.info(f"CORPUS_FEED corpus_id={req.corpusId} ingested={len(docs)} total_corpus={len(engine.corpus.documents)}")
+    return {"success": True, "corpusId": req.corpusId, "ingested": len(docs), "totalCorpusIndexed": len(engine.corpus.documents)}
+
+@app.post("/corpus/clear", dependencies=[Depends(verify_service_token)])
+def clear_corpus_endpoint(req: CorpusDisableRequest):
+    """Clear prior documents for a corpus before rebuilding"""
+    engine.corpus.clear_corpus(req.corpusId)
+    logger.info(f"CORPUS_CLEAR corpus_id={req.corpusId}")
+    return {"success": True, "corpusId": req.corpusId}
+
+@app.post("/corpus/finalize", dependencies=[Depends(verify_service_token)])
+def finalize_corpus():
+    """Rebuild TF-IDF matrix after all corpus batches are ingested"""
+    engine.corpus.rebuild_tfidf()
+    logger.info(f"CORPUS_FINALIZE total_corpus={len(engine.corpus.documents)}")
+    return {"success": True, "totalCorpusIndexed": len(engine.corpus.documents)}
+
+@app.post("/corpus/disable", dependencies=[Depends(verify_service_token)])
+def disable_corpus(req: CorpusDisableRequest):
+    """
+    Remove disabled corpus questions from the live index.
+    """
+    engine.corpus.remove_corpus(req.corpusId)
+    engine.corpus.rebuild_tfidf()
+    logger.info(f"CORPUS_DISABLE corpus_id={req.corpusId} total_corpus_remaining={len(engine.corpus.documents)}")
+    return {"success": True, "corpusId": req.corpusId, "totalCorpusIndexed": len(engine.corpus.documents)}
+
+@app.post("/corpus/clear", dependencies=[Depends(verify_service_token)])
+def clear_corpus():
+    """Clear corpus index on disk and memory"""
+    engine.corpus.clear()
+    logger.info("CORPUS_CLEAR corpus index cleared")
+    return {"success": True, "totalCorpusIndexed": 0}
 
 @app.delete("/index/{doc_id}", dependencies=[Depends(verify_service_token)])
 def remove_from_index(doc_id: str):
-    """Remove a document from index upon retirement or withdrawal"""
+    """Remove a document from bank index upon retirement or withdrawal"""
     engine.remove_document(doc_id)
-    logger.info(f"REMOVE_DOC doc_id={doc_id} total_in_memory={len(engine.documents)}")
-    return {"success": True, "removed": doc_id, "totalIndexed": len(engine.documents)}
+    logger.info(f"REMOVE_DOC doc_id={doc_id} total_bank={len(engine.bank.documents)}")
+    return {"success": True, "removed": doc_id, "totalIndexed": len(engine.bank.documents)}
 
 @app.post("/index/clear", dependencies=[Depends(verify_service_token)])
 def clear_index():
-    """Clear in-memory index for reload"""
+    """Clear in-memory bank index for reload"""
     engine.clear()
-    logger.info("CLEAR_INDEX in-memory store cleared")
+    logger.info("CLEAR_INDEX in-memory bank store cleared")
     return {"success": True, "totalIndexed": 0}
 
 @app.get("/test/network-isolation")

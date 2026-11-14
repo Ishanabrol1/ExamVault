@@ -63,6 +63,8 @@ model User {
   downloadTokens       DownloadToken[]
   keyShares            KeyShareRecord[]
   shareSubmissions     ShareSubmission[]
+  importedCorpora      PaperCorpus[]           @relation("CorpusImportedBy")
+  disabledCorpora      PaperCorpus[]           @relation("CorpusDisabledBy")
 
   @@map("users")
 }
@@ -338,6 +340,7 @@ model QuestionVersion {
   retiredBy            User?                 @relation("RetiredBy", fields: [retiredById], references: [id])
   originalityReport    OriginalityReport?
   duplicateDisposition DuplicateDisposition?
+  examinerJustification ExaminerJustification?
   reviewRounds         ReviewRound[]
   reviews              Review[]
   reviewAssignments    ReviewAssignment[]
@@ -365,10 +368,14 @@ model ApprovalPolicy {
   requireLanguageReview      Boolean           @default(true) @map("require_language_review")
   maxReviewDays              Int               @default(7) @map("max_review_days")
   difficultyTolerance        Float             @default(20) @map("difficulty_tolerance")
-  exactMatchThreshold        Float             @default(1.0) @map("exact_match_threshold")
-  highSimilarityThreshold    Float             @default(0.85) @map("high_similarity_threshold")
-  mediumSimilarityThreshold  Float             @default(0.60) @map("medium_similarity_threshold")
-  effectiveFrom              DateTime          @default(now()) @map("effective_from")
+  exactMatchThreshold           Float    @default(1.0) @map("exact_match_threshold")
+  highSimilarityThreshold       Float    @default(0.85) @map("high_similarity_threshold")
+  mediumSimilarityThreshold     Float    @default(0.60) @map("medium_similarity_threshold")
+  // Step 2 Add-On: past-paper policy fields
+  pastPaperMatchAction          String   @default("BLOCK_UNLESS_JUSTIFIED") @map("past_paper_match_action") @db.VarChar(32)
+  mediumMatchAction             String   @default("WARN") @map("medium_match_action") @db.VarChar(16)
+  treatNumberChangedAsDuplicate Boolean  @default(true) @map("treat_number_changed_as_duplicate")
+  effectiveFrom                 DateTime @default(now()) @map("effective_from")
   proposedById               String            @map("proposed_by_id") @db.Uuid
   approvedById               String?           @map("approved_by_id") @db.Uuid
   isActive                   Boolean           @default(false) @map("is_active")
@@ -584,6 +591,118 @@ model CorpusDocument {
   @@index([sourceId])
   @@index([identifier])
   @@map("corpus_documents")
+}
+
+// ── Previous-Year Paper Corpus (Step 2 Add-On) ─────────────────────
+
+enum CorpusStatusEnum {
+  ACTIVE
+  DISABLED
+
+  @@map("corpus_status")
+}
+
+enum CorpusIndexStatusEnum {
+  PENDING
+  INDEXING
+  READY
+  FAILED
+
+  @@map("corpus_index_status")
+}
+
+model PaperCorpus {
+  id              String               @id @default(uuid()) @db.Uuid
+  name            String               @db.VarChar(255)
+  licenceNote     String?              @map("licence_note") @db.Text
+  sourceLabel     String               @map("source_label") @db.VarChar(255)
+  version         Int                  @default(1)
+  status          CorpusStatusEnum     @default(ACTIVE)
+  indexStatus     CorpusIndexStatusEnum @default(PENDING) @map("index_status")
+  indexProgress   Int                  @default(0) @map("index_progress") // 0-100
+  indexError      String?              @map("index_error") @db.Text
+  disableReason   String?              @map("disable_reason") @db.Text
+  disabledById    String?              @map("disabled_by_id") @db.Uuid
+  disabledAt      DateTime?            @map("disabled_at")
+  importedById    String               @map("imported_by_id") @db.Uuid
+  questionCount   Int                  @default(0) @map("question_count")
+  yearMin         Int?                 @map("year_min")
+  yearMax         Int?                 @map("year_max")
+  languages       Json?                @db.JsonB // e.g. {"en": 1200, "hi": 800}
+  importedAt      DateTime             @default(now()) @map("imported_at")
+  createdAt       DateTime             @default(now()) @map("created_at")
+  updatedAt       DateTime             @updatedAt @map("updated_at")
+
+  importedBy  User                  @relation("CorpusImportedBy", fields: [importedById], references: [id])
+  disabledBy  User?                 @relation("CorpusDisabledBy", fields: [disabledById], references: [id])
+  questions   PaperCorpusQuestion[]
+
+  @@index([status])
+  @@index([importedById])
+  @@map("paper_corpora")
+}
+
+model PaperCorpusQuestion {
+  id            String   @id @default(uuid()) @db.Uuid
+  corpusId      String   @map("corpus_id") @db.Uuid
+  sourceExam    String   @map("source_exam") @db.VarChar(255)
+  year          Int
+  shift         String?  @db.VarChar(100)
+  paperCode     String?  @map("paper_code") @db.VarChar(100)
+  questionNo    String   @map("question_no") @db.VarChar(50)
+  language      String   @db.VarChar(10) // ISO code e.g. "en", "hi"
+  questionType  String   @map("question_type") @db.VarChar(20) // MCQ_SINGLE | MCQ_MULTI | INTEGER
+  stem          String   @db.Text
+  options       Json?    @db.JsonB // array of strings, null for INTEGER
+  subject       String?  @db.VarChar(255)
+  topic         String?  @db.VarChar(255)
+  correctAnswer String?  @map("correct_answer") @db.VarChar(100)
+  stemHash      String   @map("stem_hash") @db.VarChar(64)   // SHA-256 of normalized stem
+  combinedHash  String   @map("combined_hash") @db.VarChar(64) // SHA-256 of stem+options normalized
+  maskedHash    String   @map("masked_hash") @db.VarChar(64)  // SHA-256 of number-masked
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  corpus PaperCorpus @relation(fields: [corpusId], references: [id], onDelete: Cascade)
+
+  @@unique([corpusId, sourceExam, year, questionNo, language])
+  @@index([corpusId])
+  @@index([stemHash])
+  @@index([combinedHash])
+  @@index([maskedHash])
+  @@map("paper_corpus_questions")
+}
+
+// ── Draft Check Rate Limiting (Step 2 Add-On) ──────────────────────
+
+model DraftCheckRateLimit {
+  id           String   @id @default(uuid()) @db.Uuid
+  examinerId   String   @map("examiner_id") @db.Uuid @unique
+  minuteCount  Int      @default(0) @map("minute_count")
+  minuteWindow DateTime @default(now()) @map("minute_window") // start of current minute
+  dailyCount   Int      @default(0) @map("daily_count")
+  dailyWindow  DateTime @default(now()) @map("daily_window")  // start of current day (UTC)
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("draft_check_rate_limits")
+}
+
+// ── Examiner Justification for BLOCK_UNLESS_JUSTIFIED (Step 2 Add-On) ──
+
+model ExaminerJustification {
+  id                     String   @id @default(uuid()) @db.Uuid
+  questionVersionId      String   @unique @map("question_version_id") @db.Uuid
+  examinerId             String   @map("examiner_id") @db.Uuid
+  encryptedJustification Bytes    @map("encrypted_justification")
+  justificationNonce     Bytes    @map("justification_nonce")
+  justificationTag       Bytes    @map("justification_tag")
+  encryptedJustKey       Bytes    @map("encrypted_just_key")
+  keyId                  String   @map("key_id") @db.VarChar(64)
+  pastPaperCitation      Json?    @map("past_paper_citation") @db.JsonB // {source_exam, year, shift, paper_code, question_no}
+  createdAt              DateTime @default(now()) @map("created_at")
+
+  questionVersion QuestionVersion @relation(fields: [questionVersionId], references: [id], onDelete: Cascade)
+
+  @@map("examiner_justifications")
 }
 
 // ── Notifications ──────────────────────────────────────────────────

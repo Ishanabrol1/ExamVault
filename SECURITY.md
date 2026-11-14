@@ -93,10 +93,15 @@ prev_hash:       prev_hash:      prev_hash:
 - **Honest Limitation**: A compromised API server root process could forge approval signatures on a user's behalf without their knowledge.
 - **Roadmap / Mitigation**: An abstract `SigningProvider` interface (`apps/api/src/crypto/signing-provider.interface.ts`) is established in Step 2. In Step 3+, server-side signing will be superseded by client-side WebAuthn (FIDO2 / YubiKey hardware tokens), where the private key never leaves the reviewer's physical security token.
 
-### 4.2 Originality Index Privacy vs. Searchability Trade-Off
-- **Trade-Off**: Traditional search engines store inverted indexes on disk, which would leak unreleased examination text if the server or backup is compromised.
-- **ExamVault Solution**: The question bank index in `apps/originality-service` resides **exclusively in RAM** (`OriginalityEngine`).
-- **Restart Cost**: When the `originality-service` container restarts, its in-memory bank index is wiped. It re-synchronizes at startup by streaming normalized tokens over an authenticated internal endpoint (`/internal/originality-feed`) from the main API. On large banks (100,000+ questions), cold-start ingestion introduces a 30–60 second warm-up latency.
+### 4.2 Dual-Index Originality Privacy & Probing Protection
+- **Dual-Index Separation**:
+  - `BankIndex` (Proprietary Question Bank): Resides **exclusively in RAM** (`BankIndex`). It is never persisted to disk, protecting confidential, unreleased examination questions from offline disk leakage or backup compromise.
+  - `CorpusIndex` (Public Reference Corpora): Stored in a dedicated disk-persisted index (`/tmp/examvault_corpus_index.pkl`) because past examination papers are public domain. This enables high-performance indexing of 45,000+ past questions with instant startup.
+- **Differential Disclosure & Bank Probing Prevention**:
+  - *Adversary Model*: A rogue examiner attempting to "probe" whether a specific confidential question exists in the internal question bank by typing candidate sentences.
+  - *Mitigation*: The service implements strict role-based masking. If a live draft matches a proprietary question bank item, the response returns only a generic notification: `"Possible duplicate in the question bank"` with no question ID, no text snippet, and no fine similarity score. Conversely, if a question matches a public past-paper corpus, full official citation details (`source_exam`, `year`, `question_no`) and matched text spans are safely revealed.
+- **Microsecond Inverted Indexing & DoS Resilience**:
+  - Live drafting queries use an in-memory inverted token index and MinHash LSH buckets rather than linear document scans or runtime TF-IDF refits. This limits candidate evaluations to $< 100$ items, ensuring live draft checks execute in $< 5\text{ms}$ and preventing algorithmic denial-of-service against the checking engine.
 
 ### 4.3 Limits of Lexical Cross-Language (Hindi-English) Detection
 - **Lexical Bounds**: Standard tokenization, character shingles, and TF-IDF can detect exact matches, light edits, scrambled options, and number changes within the same language script.
@@ -206,4 +211,46 @@ Step 4 and Step 5 protect examination papers during on-the-fly automated generat
 > - Generation and release windows are restricted to immediate pre-examination timeframes.
 > - Every download event is permanently recorded in both audit sinks (Hyperledger Fabric and the signed hash chain) logging the downloading actor ID, timestamp, IP address, and SHA-256 hash of the downloaded file.
 > - Once the retention period elapses, the plaintext is destroyed and wiped from server memory.
+
+---
+
+## 7. Previous-Year Question Corpus & Live Originality Security Analysis
+
+### 7.1 Strict Network Isolation & Zero External AI Invariant
+- **Isolated Service Architecture**: The `originality-service` container operates strictly inside an isolated internal Docker bridge network (`internal: true`).
+- **No Third-Party AI / LLM APIs**: No OpenAI, Anthropic, Google Cloud, or third-party hosted LLM API may ever receive bank or draft question content. All matching uses deterministic algorithmic retrieval (SHA-256 exact hash, MinHash/LSH over word & character shingles, number-masked hashes, option multiset comparison, and TF-IDF cosine similarity).
+- **Network Verification**: Automated tests (`apps/originality-service/test_isolation.py`) enforce that attempts to establish outbound sockets to public DNS or external IPs immediately throw `OSError` / network unreachable.
+
+### 7.2 Draft Privacy & Anti-Leakage Guarantee
+- **No Disk Storage for Drafts**: Draft question content submitted to `POST /originality/check-draft` is processed entirely in volatile memory and is **never written to disk**.
+- **No Ingestion into Bank Index**: Draft checks are purely advisory queries against the already indexed bank and corpus; draft queries are **never added to the question bank index**.
+- **Privacy-Preserving Logs**: Application logs for draft checks record only the examiner pseudonym, timestamp, risk level, and match counts (`actor`, `riskLevel`, `totalMatches`). Draft stems, options, and citations are **never printed to console or written to application log files**.
+
+### 7.3 Mitigation of Question Bank Probing & Enumeration
+- **The Threat**: A rogue examiner could author synthetic queries against the originality check API to discover whether specific classified questions or topics already exist in the unreleased question bank.
+- **ExamVault Defenses**:
+  1. **Strict Information Masking for Bank Matches**: When a draft matches an existing question in the bank, the API returns **only** a generic warning:
+     - `sourceType`: `"BANK"`
+     - `bankMessage`: `"Possible duplicate in the question bank"`
+     - `riskLevel`: `"HIGH"` | `"MEDIUM"` | `"EXACT"`
+     - `matchType`: `"NEAR"` | `"EXACT"` | `"NUMBERS_CHANGED"` | `"OPTIONS_MATCH"`
+     - **Explicitly Withheld**: Question code, author, question version ID, stem text, option text, matched spans, and fine numerical similarity scores are completely stripped from the response.
+  2. **Rate Limiting & Threat Telemetry**: Live checks are rate-limited per examiner (default 30 checks/minute, 500 checks/day) via PostgreSQL sliding-window counters. Exceeding limits returns HTTP 429 and logs a security audit event `DRAFT_CHECK_RATE_LIMITED`. Rapid query probing is treated as a high-signal security incident.
+
+### 7.4 Administrator Content Separation Boundary
+- **Public vs Confidential Separation**: Past-year examination papers are public domain or institutionally licensed material. Administrators are permitted to view corpus questions, citations, and error reports on the Admin Corpus portal.
+- **Bank Confidentiality Preserved**: The admin corpus screen and corpus query endpoints **never expose unreleased question bank items**. Admin and auditor roles remain strictly blocked (HTTP 403) from decrypting bank questions or accessing bank originality reports.
+
+### 7.5 Limitations of Text-Only Retrieval & Cross-Language Translations
+1. **Text-Only Scope & Diagram Boundaries**: Matching evaluates textual stems, mathematical expressions (normalized LaTeX), and options. It does not perform computer-vision similarity on accompanying diagrams or circuit schematics. Questions that share identical diagrams but completely different textual descriptions are outside lexical detection scope.
+2. **Cross-Lingual Translation Limitation**: Lexical n-gram and TF-IDF matching cannot bridge cross-lingual paraphrases (e.g. English to Hindi) due to disjoint vocabulary. As proven in the empirical evaluation harness, cross-language translation detection requires an offline multilingual embedding model (e.g. `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`) loaded from local disk without outbound internet, which is available under a configurable feature flag (`ENABLE_SEMANTIC_MATCHING=false` by default).
+
+### 7.6 Formula-Injection Protection on CSV Exports
+- **Attack Vector**: An adversary embeds spreadsheet formulas (`=cmd|' /C ...'!A0`, `+`, `-`, `@`, `\t`, `\r`) into question stems or topics in imported corpus files, targeting administrators who export and inspect validation error reports or question lists in Excel or LibreOffice Calc.
+- **Mitigation**: All CSV generation utilities in `@examvault/shared` (`guardCsvCell`) and `apps/api/src/corpus/corpus-parser.ts` (`escapeCsvCell`) prepend a tab (`\t`) or apostrophe (`'`) to any cell beginning with formula trigger characters, neutralizing formula execution.
+
+### 7.7 Corpus Licensing, Copyright & Audit Trail
+- **Legal Compliance**: Upload of past-year paper corpora requires mandatory administrative attribution (`licence_note`, `source_label`, `name`).
+- **Disabling & Deletion Control**: Decommissioning or disabling a corpus requires a written administrative justification and step-up MFA, immediately disassociates the corpus documents from the live index, and emits a signed audit record `CORPUS_DISABLED`.
+
 

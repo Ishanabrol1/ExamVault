@@ -4,6 +4,8 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  HttpException,
+  HttpStatus,
   OnModuleInit,
   Inject,
   forwardRef,
@@ -14,7 +16,11 @@ import { CryptoService } from '../crypto/crypto.service';
 import { AuditService } from '../audit/audit.service';
 import { PoliciesService } from '../policies/policies.service';
 import { ReviewService } from '../review/review.service';
-import { DuplicateDispositionInput } from '@examvault/shared';
+import {
+  DuplicateDispositionInput,
+  DraftCheckRequest,
+  SubmitJustificationInput,
+} from '@examvault/shared';
 
 @Injectable()
 export class OriginalityService implements OnModuleInit {
@@ -185,6 +191,218 @@ export class OriginalityService implements OnModuleInit {
   }
 
   /**
+   * Live draft check for an examiner writing a question (advisory only).
+   * Strictly enforces rate limits (30/min, 500/day).
+   * Privacy: draft content is NEVER stored, disk-written, or logged.
+   * Visibility: past papers return citations and highlighted text; bank returns generic notice only.
+   */
+  async checkDraft(input: DraftCheckRequest, examinerId: string, examinerPseudonym?: string) {
+    // 1. Rate limiting per examiner
+    await this.enforceDraftCheckRateLimit(examinerId);
+
+    // 2. Fetch default thresholds & policy settings
+    const policy = await this.policies.getOrCreateDefaultPolicy();
+    const exactThreshold = policy?.exactMatchThreshold ?? 1.0;
+    const highThreshold = policy?.highSimilarityThreshold ?? 0.85;
+    const mediumThreshold = policy?.mediumSimilarityThreshold ?? 0.60;
+    const treatNumberChanged = (policy as any)?.treatNumberChangedAsDuplicate ?? true;
+
+    // 3. Call Python originality service /check-draft
+    let serviceResponse: any;
+    try {
+      const res = await fetch(this.getServiceUrl('check-draft'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.serviceToken}`,
+        },
+        body: JSON.stringify({
+          stem: input.stem,
+          options: input.options || [],
+          type: input.type,
+          language: input.language || 'en',
+          subject: input.subject || '',
+          topic: input.topic || '',
+          exactMatchThreshold: exactThreshold,
+          highSimilarityThreshold: highThreshold,
+          mediumSimilarityThreshold: mediumThreshold,
+          treatNumberChangedAsDuplicate: treatNumberChanged,
+          examinerPseudonym: examinerPseudonym || `examiner_${examinerId.slice(0, 8)}`,
+        }),
+        signal: AbortSignal.timeout(8000),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Originality service returned HTTP ${res.status}`);
+      }
+      serviceResponse = await res.json();
+    } catch (err: any) {
+      this.logger.error(`Draft originality check failed: ${err.message}`);
+      throw new BadRequestException(`Originality checker unavailable: ${err.message}`);
+    }
+
+    // 4. Audit check event: ONLY counts and riskLevel, NO question text!
+    await this.audit.log({
+      actorId: examinerId,
+      action: 'DRAFT_CHECK_PERFORMED',
+      targetType: 'draft_question',
+      targetId: undefined,
+      metadata: {
+        riskLevel: serviceResponse.riskLevel,
+        matchCount: serviceResponse.matches?.length || 0,
+      },
+    });
+
+    // 5. Enforce bank masking at API layer (defense in depth)
+    const sanitizedMatches = (serviceResponse.matches || []).map((m: any) => {
+      if (m.sourceType === 'BANK') {
+        return {
+          sourceType: 'BANK',
+          matchType: m.matchType,
+          riskLevel: m.riskLevel,
+          overallScore: undefined, // Strip fine score
+          bankMessage: 'Possible duplicate in the question bank',
+        };
+      }
+      return m;
+    });
+
+    return {
+      riskLevel: serviceResponse.riskLevel,
+      matches: sanitizedMatches,
+      checkedAt: new Date().toISOString(),
+      advisoryNote: sanitizedMatches.length === 0 ? 'No close match found in the loaded sources' : undefined,
+    };
+  }
+
+  /**
+   * Enforce rate limits on draft checks (30/min, 500/day).
+   * Exceeding rate limit throws 429 and logs DRAFT_CHECK_RATE_LIMITED audit event.
+   */
+  private async enforceDraftCheckRateLimit(examinerId: string): Promise<void> {
+    const now = new Date();
+    const minuteWindowStart = new Date(Math.floor(now.getTime() / 60000) * 60000);
+    const dayWindowStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+
+    const record = await this.prisma.draftCheckRateLimit.findUnique({
+      where: { examinerId },
+    });
+
+    const MINUTE_LIMIT = parseInt(process.env.DRAFT_CHECK_RATE_LIMIT_MINUTE || '30', 10);
+    const DAILY_LIMIT = parseInt(process.env.DRAFT_CHECK_RATE_LIMIT_DAY || '500', 10);
+
+    if (!record) {
+      await this.prisma.draftCheckRateLimit.create({
+        data: {
+          examinerId,
+          minuteCount: 1,
+          minuteWindow: minuteWindowStart,
+          dailyCount: 1,
+          dailyWindow: dayWindowStart,
+        },
+      });
+      return;
+    }
+
+    const isSameMinute = record.minuteWindow.getTime() === minuteWindowStart.getTime();
+    const isSameDay = record.dailyWindow.getTime() === dayWindowStart.getTime();
+
+    const minuteCount = isSameMinute ? record.minuteCount + 1 : 1;
+    const dailyCount = isSameDay ? record.dailyCount + 1 : 1;
+
+    if (minuteCount > MINUTE_LIMIT || dailyCount > DAILY_LIMIT) {
+      await this.audit.log({
+        actorId: examinerId,
+        action: 'DRAFT_CHECK_RATE_LIMITED',
+        targetType: 'draft_question',
+        targetId: undefined,
+        metadata: {
+          minuteCount,
+          dailyCount,
+          limitType: minuteCount > MINUTE_LIMIT ? 'minute' : 'daily',
+        },
+      });
+
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.TOO_MANY_REQUESTS,
+          error: 'Too Many Requests',
+          message: 'Draft originality check rate limit exceeded (30/minute, 500/day). Please pause before re-checking.',
+        },
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
+    await this.prisma.draftCheckRateLimit.update({
+      where: { examinerId },
+      data: {
+        minuteCount,
+        minuteWindow: isSameMinute ? record.minuteWindow : minuteWindowStart,
+        dailyCount,
+        dailyWindow: isSameDay ? record.dailyWindow : dayWindowStart,
+      },
+    });
+  }
+
+  /**
+   * Submit encrypted examiner justification for a flagged question
+   */
+  async submitJustification(
+    versionId: string,
+    input: SubmitJustificationInput,
+    examinerId: string,
+  ) {
+    const version = await this.prisma.questionVersion.findUniqueOrThrow({
+      where: { id: versionId },
+      include: { question: true },
+    });
+
+    if (version.authorId !== examinerId) {
+      throw new ForbiddenException('You can only submit justification for questions you authored');
+    }
+
+    const encrypted = await this.crypto.encrypt(
+      JSON.stringify({ justification: input.justification }),
+      `justification:${versionId}`,
+    );
+
+    const record = await this.prisma.examinerJustification.upsert({
+      where: { questionVersionId: versionId },
+      create: {
+        questionVersionId: versionId,
+        examinerId,
+        encryptedJustification: encrypted.ciphertext,
+        justificationNonce: encrypted.nonce,
+        justificationTag: encrypted.tag,
+        encryptedJustKey: encrypted.wrappedKey,
+        keyId: encrypted.keyId,
+        pastPaperCitation: (input.pastPaperCitation as any) || null,
+      },
+      update: {
+        encryptedJustification: encrypted.ciphertext,
+        justificationNonce: encrypted.nonce,
+        justificationTag: encrypted.tag,
+        encryptedJustKey: encrypted.wrappedKey,
+        keyId: encrypted.keyId,
+        pastPaperCitation: (input.pastPaperCitation as any) || null,
+      },
+    });
+
+    await this.audit.log({
+      actorId: examinerId,
+      action: 'JUSTIFICATION_SUBMITTED',
+      targetType: 'question_version',
+      targetId: versionId,
+      metadata: {
+        versionNo: version.versionNo,
+        hasCitation: !!input.pastPaperCitation,
+      },
+    });
+
+    return { success: true, justificationId: record.id };
+  }
+
+  /**
    * Screen a question version for originality
    * Enforces retry safety, audit logging, and strict state transitions
    */
@@ -269,6 +487,7 @@ export class OriginalityService implements OnModuleInit {
           exactMatchThreshold: exactThreshold,
           highSimilarityThreshold: highThreshold,
           mediumSimilarityThreshold: mediumThreshold,
+          treatNumberChangedAsDuplicate: (policy as any)?.treatNumberChangedAsDuplicate ?? true,
         }),
         signal: AbortSignal.timeout(10000),
       });
@@ -344,37 +563,77 @@ export class OriginalityService implements OnModuleInit {
         });
       }
 
-      // Determine next status:
-      // If EXACT or HIGH: transition to DUPLICATE_FLAGGED
-      // If NONE, LOW, MEDIUM: transition to READY_FOR_REVIEW
-      const isBlockingMatch = riskLevel === 'EXACT' || riskLevel === 'HIGH';
-      const targetStatus = isBlockingMatch ? 'DUPLICATE_FLAGGED' : 'READY_FOR_REVIEW';
+      // Policy Enforcement:
+      // Check if match is past-paper or bank
+      const isHighOrExact = riskLevel === 'EXACT' || riskLevel === 'HIGH';
+      const hasPastPaperHigh = matches.some((m: any) => m.sourceType === 'PAST_PAPER' && (m.overallScore >= highThreshold || m.exactHashMatch));
+      const pastPaperAction = (policy as any)?.pastPaperMatchAction || 'BLOCK_UNLESS_JUSTIFIED';
+
+      let targetStatus = 'READY_FOR_REVIEW';
+      let isBlocked = false;
+
+      if (isHighOrExact && hasPastPaperHigh) {
+        if (pastPaperAction === 'BLOCK') {
+          targetStatus = 'REJECTED';
+          isBlocked = true;
+        } else if (pastPaperAction === 'BLOCK_UNLESS_JUSTIFIED') {
+          // Check if author already provided justification
+          const justification = await tx.examinerJustification.findUnique({
+            where: { questionVersionId: versionId },
+          });
+          targetStatus = 'DUPLICATE_FLAGGED';
+        } else {
+          // WARN action
+          targetStatus = 'READY_FOR_REVIEW';
+        }
+      } else if (isHighOrExact) {
+        // Bank match high/exact -> route to DUPLICATE_FLAGGED
+        targetStatus = 'DUPLICATE_FLAGGED';
+      } else {
+        targetStatus = 'READY_FOR_REVIEW';
+      }
 
       await tx.questionVersion.update({
         where: { id: versionId },
         data: {
-          status: targetStatus,
+          status: targetStatus as any,
           policyVersion: policy?.version ?? 1,
         },
       });
 
-      return { report, targetStatus, isBlockingMatch, riskLevel, highestScore };
+      return { report, targetStatus, isBlockingMatch: targetStatus !== 'READY_FOR_REVIEW', isBlocked, riskLevel, highestScore };
     });
 
     // Audit screening result (IDs and scores ONLY, NO question text!)
-    await this.audit.log({
-      actorId: version.authorId,
-      action: savedReport.isBlockingMatch ? 'DUPLICATE_FLAGGED' : 'SCREENING_COMPLETE',
-      targetType: 'question_version',
-      targetId: versionId,
-      metadata: {
-        versionNo: version.versionNo,
-        riskLevel: savedReport.riskLevel,
-        highestScore: savedReport.highestScore,
-        matchCount: matches.length,
-        nextStatus: savedReport.targetStatus,
-      },
-    });
+    if (savedReport.isBlocked) {
+      await this.audit.log({
+        actorId: version.authorId,
+        action: 'SUBMISSION_BLOCKED_PAST_PAPER',
+        targetType: 'question_version',
+        targetId: versionId,
+        metadata: {
+          versionNo: version.versionNo,
+          riskLevel: savedReport.riskLevel,
+          highestScore: savedReport.highestScore,
+          matchCount: matches.length,
+          status: 'REJECTED',
+        },
+      });
+    } else {
+      await this.audit.log({
+        actorId: version.authorId,
+        action: savedReport.isBlockingMatch ? 'DUPLICATE_FLAGGED' : 'SCREENING_COMPLETE',
+        targetType: 'question_version',
+        targetId: versionId,
+        metadata: {
+          versionNo: version.versionNo,
+          riskLevel: savedReport.riskLevel,
+          highestScore: savedReport.highestScore,
+          matchCount: matches.length,
+          nextStatus: savedReport.targetStatus,
+        },
+      });
+    }
 
     // Also add to in-memory originality index so future submissions check against this version
     try {
@@ -549,9 +808,35 @@ export class OriginalityService implements OnModuleInit {
       return m;
     });
 
+    const justification = await this.prisma.examinerJustification.findUnique({
+      where: { questionVersionId: versionId },
+    });
+
+    let decryptedJustification: string | null = null;
+    if (justification && (isModeratorOrAdmin || userId === report.questionVersion.authorId)) {
+      try {
+        const dec = await this.crypto.decrypt(
+          {
+            ciphertext: justification.encryptedJustification,
+            nonce: justification.justificationNonce,
+            tag: justification.justificationTag,
+            wrappedKey: justification.encryptedJustKey,
+            keyId: justification.keyId,
+          },
+          `justification:${versionId}`,
+        );
+        const parsed = JSON.parse(dec);
+        decryptedJustification = parsed.justification;
+      } catch (e: any) {
+        decryptedJustification = null;
+      }
+    }
+
     return {
       ...report,
       matches: sanitizedMatches,
+      examinerJustification: decryptedJustification,
+      pastPaperCitation: justification?.pastPaperCitation,
     };
   }
 }

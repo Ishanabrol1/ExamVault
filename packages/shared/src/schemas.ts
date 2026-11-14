@@ -128,6 +128,14 @@ export const AuditAction = z.enum([
   'QUESTION_REJECT',
   'PAPER_GENERATE',
   'KEY_RELEASE',
+  // Step 2 Add-On: corpus and draft-check audit events
+  'CORPUS_IMPORTED',
+  'CORPUS_DISABLED',
+  'CORPUS_INDEX_BUILT',
+  'DRAFT_CHECK_PERFORMED',
+  'DRAFT_CHECK_RATE_LIMITED',
+  'SUBMISSION_BLOCKED_PAST_PAPER',
+  'JUSTIFICATION_SUBMITTED',
 ]);
 export type AuditAction = z.infer<typeof AuditAction>;
 
@@ -466,6 +474,10 @@ export const ProposePolicySchema = z.object({
   exactMatchThreshold: z.number().min(0).max(1).default(1.0),
   highSimilarityThreshold: z.number().min(0).max(1).default(0.85),
   mediumSimilarityThreshold: z.number().min(0).max(1).default(0.60),
+  // Step 2 Add-On: past-paper policy fields
+  pastPaperMatchAction: z.enum(['WARN', 'BLOCK_UNLESS_JUSTIFIED', 'BLOCK']).default('BLOCK_UNLESS_JUSTIFIED'),
+  mediumMatchAction: z.enum(['WARN', 'NONE']).default('WARN'),
+  treatNumberChangedAsDuplicate: z.boolean().default(true),
 });
 export type ProposePolicyInput = z.infer<typeof ProposePolicySchema>;
 
@@ -631,4 +643,146 @@ export const EligibleQuestionSchema = z.object({
   approvedAt: z.string().datetime(),
 });
 export type EligibleQuestion = z.infer<typeof EligibleQuestionSchema>;
+
+// ── Step 2 Add-On: Previous-Year Corpus Schemas ────────────────────
+
+export const PaperCorpusQuestionTypeEnum = z.enum(['MCQ_SINGLE', 'MCQ_MULTI', 'INTEGER']);
+export type PaperCorpusQuestionType = z.infer<typeof PaperCorpusQuestionTypeEnum>;
+
+const CURRENT_YEAR_SCHEMA = new Date().getFullYear();
+
+/** Shared validation for one past-paper question row (JSON or CSV). */
+export const PaperCorpusQuestionRowSchema = z.object({
+  source_exam:    z.string().min(1, 'source_exam required').max(255),
+  year:           z.coerce.number().int().min(1950).max(CURRENT_YEAR_SCHEMA + 1),
+  shift:          z.string().max(100).optional().default(''),
+  paper_code:     z.string().max(100).optional().default(''),
+  question_no:    z.string().min(1).max(50),
+  language:       z.string().min(2).max(10),
+  question_type:  PaperCorpusQuestionTypeEnum,
+  stem:           z.string().min(1).max(20000),
+  options:        z.array(z.string().min(1).max(5000)).max(6).optional(),
+  subject:        z.string().max(255).optional().default(''),
+  topic:          z.string().max(255).optional().default(''),
+  correct_answer: z.string().max(100).optional().default(''),
+}).superRefine((data, ctx) => {
+  if (data.question_type !== 'INTEGER') {
+    if (!data.options || data.options.length < 2) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'MCQ questions require 2–6 options', path: ['options'] });
+    }
+  } else {
+    if (data.options && data.options.length > 0) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'INTEGER questions must not have options', path: ['options'] });
+    }
+  }
+});
+export type PaperCorpusQuestionRow = z.infer<typeof PaperCorpusQuestionRowSchema>;
+
+/** JSON file top-level format */
+export const PaperCorpusJsonFileSchema = z.object({
+  corpus: z.object({
+    name:         z.string().min(1).max(255),
+    licence_note: z.string().max(2000).optional(),
+  }),
+  questions: z.array(PaperCorpusQuestionRowSchema).min(1).max(200000),
+});
+export type PaperCorpusJsonFile = z.infer<typeof PaperCorpusJsonFileSchema>;
+
+/** Validation error for a row */
+export const PaperCorpusRowErrorSchema = z.object({
+  row:     z.number().int(),
+  field:   z.string(),
+  message: z.string(),
+});
+export type PaperCorpusRowError = z.infer<typeof PaperCorpusRowErrorSchema>;
+
+/** Result of corpus validation */
+export const PaperCorpusValidationResultSchema = z.object({
+  valid:            z.boolean(),
+  totalRows:        z.number().int(),
+  validRows:        z.number().int(),
+  errorCount:       z.number().int(),
+  errors:           z.array(PaperCorpusRowErrorSchema),
+  withinFileDupeCount:  z.number().int(),
+  crossCorpusDupeCount: z.number().int(),
+  withinFileDupes:  z.array(z.object({ row: z.number(), key: z.string() })),
+  crossCorpusDupes: z.array(z.object({ row: z.number(), existingCorpusId: z.string(), key: z.string() })),
+  preview:          z.array(z.any()).max(20),
+});
+export type PaperCorpusValidationResult = z.infer<typeof PaperCorpusValidationResultSchema>;
+
+/** Create corpus request body */
+export const CreatePaperCorpusSchema = z.object({
+  name:        z.string().min(1).max(255),
+  licenceNote: z.string().max(2000).optional(),
+  sourceLabel: z.string().min(1).max(255),
+});
+export type CreatePaperCorpusInput = z.infer<typeof CreatePaperCorpusSchema>;
+
+/** Disable corpus request (requires step-up MFA) */
+export const DisablePaperCorpusSchema = z.object({
+  reason:    z.string().min(10, 'Reason must be at least 10 characters').max(1000),
+  totpToken: z.string().length(6).regex(/^\d{6}$/),
+});
+export type DisablePaperCorpusInput = z.infer<typeof DisablePaperCorpusSchema>;
+
+/** Duplicate handling on commit */
+export const DuplicateHandlingSchema = z.object({
+  withinFileStrategy:  z.enum(['SKIP', 'KEEP']).default('SKIP'),
+  crossCorpusStrategy: z.enum(['SKIP', 'KEEP']).default('SKIP'),
+});
+export type DuplicateHandlingInput = z.infer<typeof DuplicateHandlingSchema>;
+
+// ── Step 2 Add-On: Draft Check API Schemas ─────────────────────────
+
+export const DraftCheckRequestSchema = z.object({
+  stem:     z.string().min(1).max(20000),
+  options:  z.array(z.string().min(1).max(5000)).max(6).optional().default([]),
+  type:     QuestionType,
+  language: z.string().min(2).max(10).optional().default('en'),
+  subject:  z.string().max(255).optional(),
+  topic:    z.string().max(255).optional(),
+});
+export type DraftCheckRequest = z.infer<typeof DraftCheckRequestSchema>;
+
+export const MatchTypeEnum = z.enum(['EXACT', 'NEAR', 'NUMBERS_CHANGED', 'OPTIONS_MATCH', 'SEMANTIC']);
+export type MatchType = z.infer<typeof MatchTypeEnum>;
+
+export const PastPaperCitationSchema = z.object({
+  source_exam: z.string(),
+  year:        z.number().int(),
+  shift:       z.string().nullable().optional(),
+  paper_code:  z.string().nullable().optional(),
+  question_no: z.string(),
+});
+export type PastPaperCitation = z.infer<typeof PastPaperCitationSchema>;
+
+export const DraftMatchSchema = z.object({
+  sourceType:  z.enum(['PAST_PAPER', 'BANK']),
+  matchType:   MatchTypeEnum,
+  riskLevel:   OriginalityRiskLevel,
+  overallScore: z.number().min(0).max(1),
+  // PAST_PAPER only: full citation and highlighted spans
+  citation:    PastPaperCitationSchema.optional(),
+  matchedText: z.string().optional(),
+  spans:       z.array(z.object({ start: z.number(), end: z.number(), text: z.string() })).optional(),
+  // BANK: only generic message, no code/text/fine-score
+  bankMessage: z.string().optional(),
+});
+export type DraftMatch = z.infer<typeof DraftMatchSchema>;
+
+export const DraftCheckResponseSchema = z.object({
+  riskLevel:    OriginalityRiskLevel,
+  matches:      z.array(DraftMatchSchema).max(5),
+  checkedAt:    z.string().datetime(),
+});
+export type DraftCheckResponse = z.infer<typeof DraftCheckResponseSchema>;
+
+// ── Step 2 Add-On: Examiner Justification (BLOCK_UNLESS_JUSTIFIED) ─
+
+export const SubmitJustificationSchema = z.object({
+  justification:     z.string().min(50, 'Justification must be at least 50 characters').max(5000),
+  pastPaperCitation: PastPaperCitationSchema.optional(),
+});
+export type SubmitJustificationInput = z.infer<typeof SubmitJustificationSchema>;
 

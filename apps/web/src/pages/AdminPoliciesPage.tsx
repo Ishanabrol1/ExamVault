@@ -47,6 +47,9 @@ export const AdminPoliciesPage: React.FC = () => {
   const [exactMatchThreshold, setExactMatchThreshold] = useState<number>(1.0);
   const [highSimilarityThreshold, setHighSimilarityThreshold] = useState<number>(0.85);
   const [mediumSimilarityThreshold, setMediumSimilarityThreshold] = useState<number>(0.60);
+  const [pastPaperMatchAction, setPastPaperMatchAction] = useState<string>('BLOCK_UNLESS_JUSTIFIED');
+  const [mediumMatchAction, setMediumMatchAction] = useState<string>('WARN');
+  const [treatNumberChangedAsDuplicate, setTreatNumberChangedAsDuplicate] = useState<boolean>(true);
 
   // Corpus Import state
   const [corpusName, setCorpusName] = useState<string>('');
@@ -135,6 +138,9 @@ export const AdminPoliciesPage: React.FC = () => {
           exactMatchThreshold,
           highSimilarityThreshold,
           mediumSimilarityThreshold,
+          pastPaperMatchAction,
+          mediumMatchAction,
+          treatNumberChangedAsDuplicate,
         }),
       });
       if (data.success) {
@@ -1042,6 +1048,49 @@ export const AdminPoliciesPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
+
+                
+                  <div className="space-y-2 pt-2 border-t border-slate-200">
+                    <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wider block">
+                      Past-Paper Duplicate & Corpus Policies
+                    </span>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
+                        <label className="text-[10px] font-semibold text-slate-700 block">High/Exact Match Action</label>
+                        <select
+                          value={pastPaperMatchAction}
+                          onChange={(e) => setPastPaperMatchAction(e.target.value)}
+                          className="w-full text-xs p-1 rounded border border-slate-300 bg-white font-medium"
+                        >
+                          <option value="BLOCK">BLOCK</option>
+                          <option value="BLOCK_UNLESS_JUSTIFIED">BLOCK_UNLESS_JUSTIFIED</option>
+                          <option value="WARN">WARN</option>
+                        </select>
+                      </div>
+
+                      <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
+                        <label className="text-[10px] font-semibold text-slate-700 block">Medium Match Action</label>
+                        <select
+                          value={mediumMatchAction}
+                          onChange={(e) => setMediumMatchAction(e.target.value)}
+                          className="w-full text-xs p-1 rounded border border-slate-300 bg-white font-medium"
+                        >
+                          <option value="WARN">WARN</option>
+                          <option value="NONE">NONE</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <label className="flex items-center space-x-2 text-xs font-semibold text-slate-700 cursor-pointer pt-1">
+                      <input
+                        type="checkbox"
+                        checked={treatNumberChangedAsDuplicate}
+                        onChange={(e) => setTreatNumberChangedAsDuplicate(e.target.checked)}
+                        className="rounded border-slate-300 text-red-600 focus:ring-red-500"
+                      />
+                      <span>Treat Number-Changed Questions as Duplicate</span>
+                    </label>
+                  </div>
 
                 {/* Minimal Two-Person Notice */}
                 <div className="p-2.5 bg-amber-50 border border-amber-300 rounded-lg flex items-center space-x-2 text-xs text-amber-900">

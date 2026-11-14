@@ -12,7 +12,9 @@ graph TB
         EDITOR[LaTeX/KaTeX Question Editor]
         REV_WORKSPACE[Reviewer Workspace: Solve -> Evaluate]
         MOD_CONSOLE[Moderator Console: 5 Tabs & Dispositions]
-        ADMIN_POLICIES[Dual-Admin Policies & Corpus Import]
+        ADMIN_POLICIES[Dual-Admin Policies Console]
+        ADMIN_CORPUS[Past Papers Management Portal]
+        ORIGINALITY_BAR[Live Originality Advisory Bar]
         AUDIT_UI[Audit Chain & Approval Verifier]
         FEEDBACK_MODAL[Author Feedback & Revision Editor]
     end
@@ -23,6 +25,7 @@ graph TB
         REVIEW_MOD[Review Module: Blind Solve Barrier & Random Assignment]
         MODERATION_MOD[Moderation Module: Disagreements & Supersession]
         POLICIES_MOD[Policies Module: Scoped Dual-Admin Approval Rules]
+        CORPUS_MOD[Corpus Module: Auto-Adapting Parser & Bulk Import]
         ORIGINALITY_QUEUE[Screening Worker: PgBoss Background Queue]
         CRYPTO_MOD[Crypto Module: AES-256-GCM + ServerSigningProvider]
         AUDIT_MOD[Audit Module: Append-Only Hash Chain + Ed25519]
@@ -30,9 +33,10 @@ graph TB
     end
 
     subgraph "Originality Microservice — apps/originality-service (FastAPI)"
-        DETECTOR[OriginalityEngine: MinHash LSH + TF-IDF Cosine + Scramble Detection]
+        DETECTOR[OriginalityEngine: MinHash LSH + Inverted Token Index + Containment]
         NORMALIZER[Devanagari/LaTeX Normalizer & Number Masking]
-        RAM_INDEX[(In-Memory RAM Question Index — Never on Disk)]
+        RAM_INDEX[(In-Memory RAM Bank Index — Never on Disk)]
+        CORPUS_INDEX[(Disk-Persisted Public Past-Paper Index — 45k+ Items)]
     end
 
     subgraph "Storage & Infrastructure"
@@ -44,15 +48,21 @@ graph TB
     LOGIN --> AUTH_MOD
     DASH --> QUESTIONS_MOD
     EDITOR --> QUESTIONS_MOD
+    EDITOR --> ORIGINALITY_BAR
+    ORIGINALITY_BAR --> DETECTOR
     REV_WORKSPACE --> REVIEW_MOD
     MOD_CONSOLE --> MODERATION_MOD
     ADMIN_POLICIES --> POLICIES_MOD
+    ADMIN_CORPUS --> CORPUS_MOD
+    CORPUS_MOD --> CORPUS_INDEX
+    CORPUS_MOD --> POSTGRES
     AUDIT_UI --> AUDIT_MOD
     FEEDBACK_MODAL --> QUESTIONS_MOD
 
     QUESTIONS_MOD --> ORIGINALITY_QUEUE
     ORIGINALITY_QUEUE --> DETECTOR
     DETECTOR --> RAM_INDEX
+    DETECTOR --> CORPUS_INDEX
     DETECTOR --> NORMALIZER
 
     REVIEW_MOD --> CRYPTO_MOD

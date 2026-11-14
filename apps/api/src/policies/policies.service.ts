@@ -47,6 +47,9 @@ export class PoliciesService {
             exactMatchThreshold: 1.0,
             highSimilarityThreshold: 0.85,
             mediumSimilarityThreshold: 0.60,
+            pastPaperMatchAction: 'BLOCK_UNLESS_JUSTIFIED',
+            mediumMatchAction: 'WARN',
+            treatNumberChangedAsDuplicate: true,
             effectiveFrom: new Date(),
             proposedById: admin.id,
             approvedById: admin.id, // Genesis bootstrap approval
@@ -99,6 +102,9 @@ export class PoliciesService {
         exactMatchThreshold: input.exactMatchThreshold ?? 1.0,
         highSimilarityThreshold: input.highSimilarityThreshold ?? 0.85,
         mediumSimilarityThreshold: input.mediumSimilarityThreshold ?? 0.60,
+        pastPaperMatchAction: (input as any).pastPaperMatchAction ?? 'BLOCK_UNLESS_JUSTIFIED',
+        mediumMatchAction: (input as any).mediumMatchAction ?? 'WARN',
+        treatNumberChangedAsDuplicate: (input as any).treatNumberChangedAsDuplicate ?? true,
         proposedById: proposerId,
         approvedById: null,
         isActive: false, // Inactive until dual-admin approved

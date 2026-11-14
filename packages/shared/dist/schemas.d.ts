@@ -19,7 +19,7 @@ export declare const CognitiveLevel: z.ZodEnum<["REMEMBER", "UNDERSTAND", "APPLY
 export type CognitiveLevel = z.infer<typeof CognitiveLevel>;
 export declare const Language: z.ZodEnum<["EN", "HI", "BILINGUAL"]>;
 export type Language = z.infer<typeof Language>;
-export declare const AuditAction: z.ZodEnum<["LOGIN_SUCCESS", "LOGIN_FAILURE", "LOGOUT", "MFA_SETUP", "MFA_VERIFY", "MFA_FAILURE", "USER_CREATE", "USER_UPDATE", "USER_DELETE", "ROLE_CHANGE", "SYLLABUS_CREATE", "SYLLABUS_UPDATE", "SYLLABUS_DELETE", "QUESTION_CREATE", "QUESTION_EDIT", "QUESTION_SUBMIT", "QUESTION_WITHDRAW", "QUESTION_READ", "QUESTION_CONTENT_READ", "IMPORT_START", "IMPORT_SUCCESS", "IMPORT_FAILURE", "ACCESS_DENIED", "SCREENING_START", "SCREENING_COMPLETE", "DUPLICATE_FLAGGED", "DUPLICATE_DISPOSITION", "REVIEWER_ASSIGNMENT", "BLIND_ANSWER_SUBMIT", "KEY_REVEAL", "REVIEW_DECISION", "DISAGREEMENT_RAISED", "DISAGREEMENT_RESOLVED", "MODERATOR_DECISION", "APPROVAL_SIGNED", "NEW_VERSION_CREATE", "VERSION_SUPERSEDED", "VERSION_RETIRED", "POLICY_PROPOSE", "POLICY_APPROVE", "CONFLICT_UPDATE", "STEP_UP_MFA_SUCCESS", "STEP_UP_MFA_FAILURE", "ORIGINALITY_SERVICE_FAILURE", "REVIEW_COMMENT_READ", "REVIEW_REASSIGN", "QUESTION_REVIEW_START", "QUESTION_APPROVE", "QUESTION_REJECT", "PAPER_GENERATE", "KEY_RELEASE"]>;
+export declare const AuditAction: z.ZodEnum<["LOGIN_SUCCESS", "LOGIN_FAILURE", "LOGOUT", "MFA_SETUP", "MFA_VERIFY", "MFA_FAILURE", "USER_CREATE", "USER_UPDATE", "USER_DELETE", "ROLE_CHANGE", "SYLLABUS_CREATE", "SYLLABUS_UPDATE", "SYLLABUS_DELETE", "QUESTION_CREATE", "QUESTION_EDIT", "QUESTION_SUBMIT", "QUESTION_WITHDRAW", "QUESTION_READ", "QUESTION_CONTENT_READ", "IMPORT_START", "IMPORT_SUCCESS", "IMPORT_FAILURE", "ACCESS_DENIED", "SCREENING_START", "SCREENING_COMPLETE", "DUPLICATE_FLAGGED", "DUPLICATE_DISPOSITION", "REVIEWER_ASSIGNMENT", "BLIND_ANSWER_SUBMIT", "KEY_REVEAL", "REVIEW_DECISION", "DISAGREEMENT_RAISED", "DISAGREEMENT_RESOLVED", "MODERATOR_DECISION", "APPROVAL_SIGNED", "NEW_VERSION_CREATE", "VERSION_SUPERSEDED", "VERSION_RETIRED", "POLICY_PROPOSE", "POLICY_APPROVE", "CONFLICT_UPDATE", "STEP_UP_MFA_SUCCESS", "STEP_UP_MFA_FAILURE", "ORIGINALITY_SERVICE_FAILURE", "REVIEW_COMMENT_READ", "REVIEW_REASSIGN", "QUESTION_REVIEW_START", "QUESTION_APPROVE", "QUESTION_REJECT", "PAPER_GENERATE", "KEY_RELEASE", "CORPUS_IMPORTED", "CORPUS_DISABLED", "CORPUS_INDEX_BUILT", "DRAFT_CHECK_PERFORMED", "DRAFT_CHECK_RATE_LIMITED", "SUBMISSION_BLOCKED_PAST_PAPER", "JUSTIFICATION_SUBMITTED"]>;
 export type AuditAction = z.infer<typeof AuditAction>;
 export declare const CreateUserSchema: z.ZodObject<{
     email: z.ZodString;
@@ -1041,7 +1041,7 @@ export declare const AuditEventResponseSchema: z.ZodObject<{
     timestamp: z.ZodString;
     actorId: z.ZodNullable<z.ZodString>;
     actorEmail: z.ZodOptional<z.ZodString>;
-    action: z.ZodEnum<["LOGIN_SUCCESS", "LOGIN_FAILURE", "LOGOUT", "MFA_SETUP", "MFA_VERIFY", "MFA_FAILURE", "USER_CREATE", "USER_UPDATE", "USER_DELETE", "ROLE_CHANGE", "SYLLABUS_CREATE", "SYLLABUS_UPDATE", "SYLLABUS_DELETE", "QUESTION_CREATE", "QUESTION_EDIT", "QUESTION_SUBMIT", "QUESTION_WITHDRAW", "QUESTION_READ", "QUESTION_CONTENT_READ", "IMPORT_START", "IMPORT_SUCCESS", "IMPORT_FAILURE", "ACCESS_DENIED", "SCREENING_START", "SCREENING_COMPLETE", "DUPLICATE_FLAGGED", "DUPLICATE_DISPOSITION", "REVIEWER_ASSIGNMENT", "BLIND_ANSWER_SUBMIT", "KEY_REVEAL", "REVIEW_DECISION", "DISAGREEMENT_RAISED", "DISAGREEMENT_RESOLVED", "MODERATOR_DECISION", "APPROVAL_SIGNED", "NEW_VERSION_CREATE", "VERSION_SUPERSEDED", "VERSION_RETIRED", "POLICY_PROPOSE", "POLICY_APPROVE", "CONFLICT_UPDATE", "STEP_UP_MFA_SUCCESS", "STEP_UP_MFA_FAILURE", "ORIGINALITY_SERVICE_FAILURE", "REVIEW_COMMENT_READ", "REVIEW_REASSIGN", "QUESTION_REVIEW_START", "QUESTION_APPROVE", "QUESTION_REJECT", "PAPER_GENERATE", "KEY_RELEASE"]>;
+    action: z.ZodEnum<["LOGIN_SUCCESS", "LOGIN_FAILURE", "LOGOUT", "MFA_SETUP", "MFA_VERIFY", "MFA_FAILURE", "USER_CREATE", "USER_UPDATE", "USER_DELETE", "ROLE_CHANGE", "SYLLABUS_CREATE", "SYLLABUS_UPDATE", "SYLLABUS_DELETE", "QUESTION_CREATE", "QUESTION_EDIT", "QUESTION_SUBMIT", "QUESTION_WITHDRAW", "QUESTION_READ", "QUESTION_CONTENT_READ", "IMPORT_START", "IMPORT_SUCCESS", "IMPORT_FAILURE", "ACCESS_DENIED", "SCREENING_START", "SCREENING_COMPLETE", "DUPLICATE_FLAGGED", "DUPLICATE_DISPOSITION", "REVIEWER_ASSIGNMENT", "BLIND_ANSWER_SUBMIT", "KEY_REVEAL", "REVIEW_DECISION", "DISAGREEMENT_RAISED", "DISAGREEMENT_RESOLVED", "MODERATOR_DECISION", "APPROVAL_SIGNED", "NEW_VERSION_CREATE", "VERSION_SUPERSEDED", "VERSION_RETIRED", "POLICY_PROPOSE", "POLICY_APPROVE", "CONFLICT_UPDATE", "STEP_UP_MFA_SUCCESS", "STEP_UP_MFA_FAILURE", "ORIGINALITY_SERVICE_FAILURE", "REVIEW_COMMENT_READ", "REVIEW_REASSIGN", "QUESTION_REVIEW_START", "QUESTION_APPROVE", "QUESTION_REJECT", "PAPER_GENERATE", "KEY_RELEASE", "CORPUS_IMPORTED", "CORPUS_DISABLED", "CORPUS_INDEX_BUILT", "DRAFT_CHECK_PERFORMED", "DRAFT_CHECK_RATE_LIMITED", "SUBMISSION_BLOCKED_PAST_PAPER", "JUSTIFICATION_SUBMITTED"]>;
     targetType: z.ZodString;
     targetId: z.ZodOptional<z.ZodString>;
     metadata: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnknown>>;
@@ -1052,7 +1052,7 @@ export declare const AuditEventResponseSchema: z.ZodObject<{
     id: string;
     timestamp: string;
     actorId: string | null;
-    action: "DUPLICATE_FLAGGED" | "LOGIN_SUCCESS" | "LOGIN_FAILURE" | "LOGOUT" | "MFA_SETUP" | "MFA_VERIFY" | "MFA_FAILURE" | "USER_CREATE" | "USER_UPDATE" | "USER_DELETE" | "ROLE_CHANGE" | "SYLLABUS_CREATE" | "SYLLABUS_UPDATE" | "SYLLABUS_DELETE" | "QUESTION_CREATE" | "QUESTION_EDIT" | "QUESTION_SUBMIT" | "QUESTION_WITHDRAW" | "QUESTION_READ" | "QUESTION_CONTENT_READ" | "IMPORT_START" | "IMPORT_SUCCESS" | "IMPORT_FAILURE" | "ACCESS_DENIED" | "SCREENING_START" | "SCREENING_COMPLETE" | "DUPLICATE_DISPOSITION" | "REVIEWER_ASSIGNMENT" | "BLIND_ANSWER_SUBMIT" | "KEY_REVEAL" | "REVIEW_DECISION" | "DISAGREEMENT_RAISED" | "DISAGREEMENT_RESOLVED" | "MODERATOR_DECISION" | "APPROVAL_SIGNED" | "NEW_VERSION_CREATE" | "VERSION_SUPERSEDED" | "VERSION_RETIRED" | "POLICY_PROPOSE" | "POLICY_APPROVE" | "CONFLICT_UPDATE" | "STEP_UP_MFA_SUCCESS" | "STEP_UP_MFA_FAILURE" | "ORIGINALITY_SERVICE_FAILURE" | "REVIEW_COMMENT_READ" | "REVIEW_REASSIGN" | "QUESTION_REVIEW_START" | "QUESTION_APPROVE" | "QUESTION_REJECT" | "PAPER_GENERATE" | "KEY_RELEASE";
+    action: "DUPLICATE_FLAGGED" | "LOGIN_SUCCESS" | "LOGIN_FAILURE" | "LOGOUT" | "MFA_SETUP" | "MFA_VERIFY" | "MFA_FAILURE" | "USER_CREATE" | "USER_UPDATE" | "USER_DELETE" | "ROLE_CHANGE" | "SYLLABUS_CREATE" | "SYLLABUS_UPDATE" | "SYLLABUS_DELETE" | "QUESTION_CREATE" | "QUESTION_EDIT" | "QUESTION_SUBMIT" | "QUESTION_WITHDRAW" | "QUESTION_READ" | "QUESTION_CONTENT_READ" | "IMPORT_START" | "IMPORT_SUCCESS" | "IMPORT_FAILURE" | "ACCESS_DENIED" | "SCREENING_START" | "SCREENING_COMPLETE" | "DUPLICATE_DISPOSITION" | "REVIEWER_ASSIGNMENT" | "BLIND_ANSWER_SUBMIT" | "KEY_REVEAL" | "REVIEW_DECISION" | "DISAGREEMENT_RAISED" | "DISAGREEMENT_RESOLVED" | "MODERATOR_DECISION" | "APPROVAL_SIGNED" | "NEW_VERSION_CREATE" | "VERSION_SUPERSEDED" | "VERSION_RETIRED" | "POLICY_PROPOSE" | "POLICY_APPROVE" | "CONFLICT_UPDATE" | "STEP_UP_MFA_SUCCESS" | "STEP_UP_MFA_FAILURE" | "ORIGINALITY_SERVICE_FAILURE" | "REVIEW_COMMENT_READ" | "REVIEW_REASSIGN" | "QUESTION_REVIEW_START" | "QUESTION_APPROVE" | "QUESTION_REJECT" | "PAPER_GENERATE" | "KEY_RELEASE" | "CORPUS_IMPORTED" | "CORPUS_DISABLED" | "CORPUS_INDEX_BUILT" | "DRAFT_CHECK_PERFORMED" | "DRAFT_CHECK_RATE_LIMITED" | "SUBMISSION_BLOCKED_PAST_PAPER" | "JUSTIFICATION_SUBMITTED";
     targetType: string;
     entryHash: string;
     prevHash: string;
@@ -1064,7 +1064,7 @@ export declare const AuditEventResponseSchema: z.ZodObject<{
     id: string;
     timestamp: string;
     actorId: string | null;
-    action: "DUPLICATE_FLAGGED" | "LOGIN_SUCCESS" | "LOGIN_FAILURE" | "LOGOUT" | "MFA_SETUP" | "MFA_VERIFY" | "MFA_FAILURE" | "USER_CREATE" | "USER_UPDATE" | "USER_DELETE" | "ROLE_CHANGE" | "SYLLABUS_CREATE" | "SYLLABUS_UPDATE" | "SYLLABUS_DELETE" | "QUESTION_CREATE" | "QUESTION_EDIT" | "QUESTION_SUBMIT" | "QUESTION_WITHDRAW" | "QUESTION_READ" | "QUESTION_CONTENT_READ" | "IMPORT_START" | "IMPORT_SUCCESS" | "IMPORT_FAILURE" | "ACCESS_DENIED" | "SCREENING_START" | "SCREENING_COMPLETE" | "DUPLICATE_DISPOSITION" | "REVIEWER_ASSIGNMENT" | "BLIND_ANSWER_SUBMIT" | "KEY_REVEAL" | "REVIEW_DECISION" | "DISAGREEMENT_RAISED" | "DISAGREEMENT_RESOLVED" | "MODERATOR_DECISION" | "APPROVAL_SIGNED" | "NEW_VERSION_CREATE" | "VERSION_SUPERSEDED" | "VERSION_RETIRED" | "POLICY_PROPOSE" | "POLICY_APPROVE" | "CONFLICT_UPDATE" | "STEP_UP_MFA_SUCCESS" | "STEP_UP_MFA_FAILURE" | "ORIGINALITY_SERVICE_FAILURE" | "REVIEW_COMMENT_READ" | "REVIEW_REASSIGN" | "QUESTION_REVIEW_START" | "QUESTION_APPROVE" | "QUESTION_REJECT" | "PAPER_GENERATE" | "KEY_RELEASE";
+    action: "DUPLICATE_FLAGGED" | "LOGIN_SUCCESS" | "LOGIN_FAILURE" | "LOGOUT" | "MFA_SETUP" | "MFA_VERIFY" | "MFA_FAILURE" | "USER_CREATE" | "USER_UPDATE" | "USER_DELETE" | "ROLE_CHANGE" | "SYLLABUS_CREATE" | "SYLLABUS_UPDATE" | "SYLLABUS_DELETE" | "QUESTION_CREATE" | "QUESTION_EDIT" | "QUESTION_SUBMIT" | "QUESTION_WITHDRAW" | "QUESTION_READ" | "QUESTION_CONTENT_READ" | "IMPORT_START" | "IMPORT_SUCCESS" | "IMPORT_FAILURE" | "ACCESS_DENIED" | "SCREENING_START" | "SCREENING_COMPLETE" | "DUPLICATE_DISPOSITION" | "REVIEWER_ASSIGNMENT" | "BLIND_ANSWER_SUBMIT" | "KEY_REVEAL" | "REVIEW_DECISION" | "DISAGREEMENT_RAISED" | "DISAGREEMENT_RESOLVED" | "MODERATOR_DECISION" | "APPROVAL_SIGNED" | "NEW_VERSION_CREATE" | "VERSION_SUPERSEDED" | "VERSION_RETIRED" | "POLICY_PROPOSE" | "POLICY_APPROVE" | "CONFLICT_UPDATE" | "STEP_UP_MFA_SUCCESS" | "STEP_UP_MFA_FAILURE" | "ORIGINALITY_SERVICE_FAILURE" | "REVIEW_COMMENT_READ" | "REVIEW_REASSIGN" | "QUESTION_REVIEW_START" | "QUESTION_APPROVE" | "QUESTION_REJECT" | "PAPER_GENERATE" | "KEY_RELEASE" | "CORPUS_IMPORTED" | "CORPUS_DISABLED" | "CORPUS_INDEX_BUILT" | "DRAFT_CHECK_PERFORMED" | "DRAFT_CHECK_RATE_LIMITED" | "SUBMISSION_BLOCKED_PAST_PAPER" | "JUSTIFICATION_SUBMITTED";
     targetType: string;
     entryHash: string;
     prevHash: string;
@@ -1117,7 +1117,7 @@ export declare const AuditVerifyResponseSchema: z.ZodObject<{
 }>;
 export type AuditVerifyResponse = z.infer<typeof AuditVerifyResponseSchema>;
 export declare const AuditFilterSchema: z.ZodObject<{
-    action: z.ZodOptional<z.ZodEnum<["LOGIN_SUCCESS", "LOGIN_FAILURE", "LOGOUT", "MFA_SETUP", "MFA_VERIFY", "MFA_FAILURE", "USER_CREATE", "USER_UPDATE", "USER_DELETE", "ROLE_CHANGE", "SYLLABUS_CREATE", "SYLLABUS_UPDATE", "SYLLABUS_DELETE", "QUESTION_CREATE", "QUESTION_EDIT", "QUESTION_SUBMIT", "QUESTION_WITHDRAW", "QUESTION_READ", "QUESTION_CONTENT_READ", "IMPORT_START", "IMPORT_SUCCESS", "IMPORT_FAILURE", "ACCESS_DENIED", "SCREENING_START", "SCREENING_COMPLETE", "DUPLICATE_FLAGGED", "DUPLICATE_DISPOSITION", "REVIEWER_ASSIGNMENT", "BLIND_ANSWER_SUBMIT", "KEY_REVEAL", "REVIEW_DECISION", "DISAGREEMENT_RAISED", "DISAGREEMENT_RESOLVED", "MODERATOR_DECISION", "APPROVAL_SIGNED", "NEW_VERSION_CREATE", "VERSION_SUPERSEDED", "VERSION_RETIRED", "POLICY_PROPOSE", "POLICY_APPROVE", "CONFLICT_UPDATE", "STEP_UP_MFA_SUCCESS", "STEP_UP_MFA_FAILURE", "ORIGINALITY_SERVICE_FAILURE", "REVIEW_COMMENT_READ", "REVIEW_REASSIGN", "QUESTION_REVIEW_START", "QUESTION_APPROVE", "QUESTION_REJECT", "PAPER_GENERATE", "KEY_RELEASE"]>>;
+    action: z.ZodOptional<z.ZodEnum<["LOGIN_SUCCESS", "LOGIN_FAILURE", "LOGOUT", "MFA_SETUP", "MFA_VERIFY", "MFA_FAILURE", "USER_CREATE", "USER_UPDATE", "USER_DELETE", "ROLE_CHANGE", "SYLLABUS_CREATE", "SYLLABUS_UPDATE", "SYLLABUS_DELETE", "QUESTION_CREATE", "QUESTION_EDIT", "QUESTION_SUBMIT", "QUESTION_WITHDRAW", "QUESTION_READ", "QUESTION_CONTENT_READ", "IMPORT_START", "IMPORT_SUCCESS", "IMPORT_FAILURE", "ACCESS_DENIED", "SCREENING_START", "SCREENING_COMPLETE", "DUPLICATE_FLAGGED", "DUPLICATE_DISPOSITION", "REVIEWER_ASSIGNMENT", "BLIND_ANSWER_SUBMIT", "KEY_REVEAL", "REVIEW_DECISION", "DISAGREEMENT_RAISED", "DISAGREEMENT_RESOLVED", "MODERATOR_DECISION", "APPROVAL_SIGNED", "NEW_VERSION_CREATE", "VERSION_SUPERSEDED", "VERSION_RETIRED", "POLICY_PROPOSE", "POLICY_APPROVE", "CONFLICT_UPDATE", "STEP_UP_MFA_SUCCESS", "STEP_UP_MFA_FAILURE", "ORIGINALITY_SERVICE_FAILURE", "REVIEW_COMMENT_READ", "REVIEW_REASSIGN", "QUESTION_REVIEW_START", "QUESTION_APPROVE", "QUESTION_REJECT", "PAPER_GENERATE", "KEY_RELEASE", "CORPUS_IMPORTED", "CORPUS_DISABLED", "CORPUS_INDEX_BUILT", "DRAFT_CHECK_PERFORMED", "DRAFT_CHECK_RATE_LIMITED", "SUBMISSION_BLOCKED_PAST_PAPER", "JUSTIFICATION_SUBMITTED"]>>;
     actorId: z.ZodOptional<z.ZodString>;
     targetType: z.ZodOptional<z.ZodString>;
     targetId: z.ZodOptional<z.ZodString>;
@@ -1129,14 +1129,14 @@ export declare const AuditFilterSchema: z.ZodObject<{
     page: number;
     limit: number;
     actorId?: string | undefined;
-    action?: "DUPLICATE_FLAGGED" | "LOGIN_SUCCESS" | "LOGIN_FAILURE" | "LOGOUT" | "MFA_SETUP" | "MFA_VERIFY" | "MFA_FAILURE" | "USER_CREATE" | "USER_UPDATE" | "USER_DELETE" | "ROLE_CHANGE" | "SYLLABUS_CREATE" | "SYLLABUS_UPDATE" | "SYLLABUS_DELETE" | "QUESTION_CREATE" | "QUESTION_EDIT" | "QUESTION_SUBMIT" | "QUESTION_WITHDRAW" | "QUESTION_READ" | "QUESTION_CONTENT_READ" | "IMPORT_START" | "IMPORT_SUCCESS" | "IMPORT_FAILURE" | "ACCESS_DENIED" | "SCREENING_START" | "SCREENING_COMPLETE" | "DUPLICATE_DISPOSITION" | "REVIEWER_ASSIGNMENT" | "BLIND_ANSWER_SUBMIT" | "KEY_REVEAL" | "REVIEW_DECISION" | "DISAGREEMENT_RAISED" | "DISAGREEMENT_RESOLVED" | "MODERATOR_DECISION" | "APPROVAL_SIGNED" | "NEW_VERSION_CREATE" | "VERSION_SUPERSEDED" | "VERSION_RETIRED" | "POLICY_PROPOSE" | "POLICY_APPROVE" | "CONFLICT_UPDATE" | "STEP_UP_MFA_SUCCESS" | "STEP_UP_MFA_FAILURE" | "ORIGINALITY_SERVICE_FAILURE" | "REVIEW_COMMENT_READ" | "REVIEW_REASSIGN" | "QUESTION_REVIEW_START" | "QUESTION_APPROVE" | "QUESTION_REJECT" | "PAPER_GENERATE" | "KEY_RELEASE" | undefined;
+    action?: "DUPLICATE_FLAGGED" | "LOGIN_SUCCESS" | "LOGIN_FAILURE" | "LOGOUT" | "MFA_SETUP" | "MFA_VERIFY" | "MFA_FAILURE" | "USER_CREATE" | "USER_UPDATE" | "USER_DELETE" | "ROLE_CHANGE" | "SYLLABUS_CREATE" | "SYLLABUS_UPDATE" | "SYLLABUS_DELETE" | "QUESTION_CREATE" | "QUESTION_EDIT" | "QUESTION_SUBMIT" | "QUESTION_WITHDRAW" | "QUESTION_READ" | "QUESTION_CONTENT_READ" | "IMPORT_START" | "IMPORT_SUCCESS" | "IMPORT_FAILURE" | "ACCESS_DENIED" | "SCREENING_START" | "SCREENING_COMPLETE" | "DUPLICATE_DISPOSITION" | "REVIEWER_ASSIGNMENT" | "BLIND_ANSWER_SUBMIT" | "KEY_REVEAL" | "REVIEW_DECISION" | "DISAGREEMENT_RAISED" | "DISAGREEMENT_RESOLVED" | "MODERATOR_DECISION" | "APPROVAL_SIGNED" | "NEW_VERSION_CREATE" | "VERSION_SUPERSEDED" | "VERSION_RETIRED" | "POLICY_PROPOSE" | "POLICY_APPROVE" | "CONFLICT_UPDATE" | "STEP_UP_MFA_SUCCESS" | "STEP_UP_MFA_FAILURE" | "ORIGINALITY_SERVICE_FAILURE" | "REVIEW_COMMENT_READ" | "REVIEW_REASSIGN" | "QUESTION_REVIEW_START" | "QUESTION_APPROVE" | "QUESTION_REJECT" | "PAPER_GENERATE" | "KEY_RELEASE" | "CORPUS_IMPORTED" | "CORPUS_DISABLED" | "CORPUS_INDEX_BUILT" | "DRAFT_CHECK_PERFORMED" | "DRAFT_CHECK_RATE_LIMITED" | "SUBMISSION_BLOCKED_PAST_PAPER" | "JUSTIFICATION_SUBMITTED" | undefined;
     targetType?: string | undefined;
     targetId?: string | undefined;
     from?: string | undefined;
     to?: string | undefined;
 }, {
     actorId?: string | undefined;
-    action?: "DUPLICATE_FLAGGED" | "LOGIN_SUCCESS" | "LOGIN_FAILURE" | "LOGOUT" | "MFA_SETUP" | "MFA_VERIFY" | "MFA_FAILURE" | "USER_CREATE" | "USER_UPDATE" | "USER_DELETE" | "ROLE_CHANGE" | "SYLLABUS_CREATE" | "SYLLABUS_UPDATE" | "SYLLABUS_DELETE" | "QUESTION_CREATE" | "QUESTION_EDIT" | "QUESTION_SUBMIT" | "QUESTION_WITHDRAW" | "QUESTION_READ" | "QUESTION_CONTENT_READ" | "IMPORT_START" | "IMPORT_SUCCESS" | "IMPORT_FAILURE" | "ACCESS_DENIED" | "SCREENING_START" | "SCREENING_COMPLETE" | "DUPLICATE_DISPOSITION" | "REVIEWER_ASSIGNMENT" | "BLIND_ANSWER_SUBMIT" | "KEY_REVEAL" | "REVIEW_DECISION" | "DISAGREEMENT_RAISED" | "DISAGREEMENT_RESOLVED" | "MODERATOR_DECISION" | "APPROVAL_SIGNED" | "NEW_VERSION_CREATE" | "VERSION_SUPERSEDED" | "VERSION_RETIRED" | "POLICY_PROPOSE" | "POLICY_APPROVE" | "CONFLICT_UPDATE" | "STEP_UP_MFA_SUCCESS" | "STEP_UP_MFA_FAILURE" | "ORIGINALITY_SERVICE_FAILURE" | "REVIEW_COMMENT_READ" | "REVIEW_REASSIGN" | "QUESTION_REVIEW_START" | "QUESTION_APPROVE" | "QUESTION_REJECT" | "PAPER_GENERATE" | "KEY_RELEASE" | undefined;
+    action?: "DUPLICATE_FLAGGED" | "LOGIN_SUCCESS" | "LOGIN_FAILURE" | "LOGOUT" | "MFA_SETUP" | "MFA_VERIFY" | "MFA_FAILURE" | "USER_CREATE" | "USER_UPDATE" | "USER_DELETE" | "ROLE_CHANGE" | "SYLLABUS_CREATE" | "SYLLABUS_UPDATE" | "SYLLABUS_DELETE" | "QUESTION_CREATE" | "QUESTION_EDIT" | "QUESTION_SUBMIT" | "QUESTION_WITHDRAW" | "QUESTION_READ" | "QUESTION_CONTENT_READ" | "IMPORT_START" | "IMPORT_SUCCESS" | "IMPORT_FAILURE" | "ACCESS_DENIED" | "SCREENING_START" | "SCREENING_COMPLETE" | "DUPLICATE_DISPOSITION" | "REVIEWER_ASSIGNMENT" | "BLIND_ANSWER_SUBMIT" | "KEY_REVEAL" | "REVIEW_DECISION" | "DISAGREEMENT_RAISED" | "DISAGREEMENT_RESOLVED" | "MODERATOR_DECISION" | "APPROVAL_SIGNED" | "NEW_VERSION_CREATE" | "VERSION_SUPERSEDED" | "VERSION_RETIRED" | "POLICY_PROPOSE" | "POLICY_APPROVE" | "CONFLICT_UPDATE" | "STEP_UP_MFA_SUCCESS" | "STEP_UP_MFA_FAILURE" | "ORIGINALITY_SERVICE_FAILURE" | "REVIEW_COMMENT_READ" | "REVIEW_REASSIGN" | "QUESTION_REVIEW_START" | "QUESTION_APPROVE" | "QUESTION_REJECT" | "PAPER_GENERATE" | "KEY_RELEASE" | "CORPUS_IMPORTED" | "CORPUS_DISABLED" | "CORPUS_INDEX_BUILT" | "DRAFT_CHECK_PERFORMED" | "DRAFT_CHECK_RATE_LIMITED" | "SUBMISSION_BLOCKED_PAST_PAPER" | "JUSTIFICATION_SUBMITTED" | undefined;
     targetType?: string | undefined;
     targetId?: string | undefined;
     from?: string | undefined;
@@ -1348,6 +1348,9 @@ export declare const ProposePolicySchema: z.ZodObject<{
     exactMatchThreshold: z.ZodDefault<z.ZodNumber>;
     highSimilarityThreshold: z.ZodDefault<z.ZodNumber>;
     mediumSimilarityThreshold: z.ZodDefault<z.ZodNumber>;
+    pastPaperMatchAction: z.ZodDefault<z.ZodEnum<["WARN", "BLOCK_UNLESS_JUSTIFIED", "BLOCK"]>>;
+    mediumMatchAction: z.ZodDefault<z.ZodEnum<["WARN", "NONE"]>>;
+    treatNumberChangedAsDuplicate: z.ZodDefault<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
     requiredReviewers: number;
     requireBlindSolve: boolean;
@@ -1358,6 +1361,9 @@ export declare const ProposePolicySchema: z.ZodObject<{
     exactMatchThreshold: number;
     highSimilarityThreshold: number;
     mediumSimilarityThreshold: number;
+    pastPaperMatchAction: "WARN" | "BLOCK_UNLESS_JUSTIFIED" | "BLOCK";
+    mediumMatchAction: "NONE" | "WARN";
+    treatNumberChangedAsDuplicate: boolean;
     examId?: string | undefined;
     subjectId?: string | undefined;
     questionType?: "MCQ_SINGLE" | "MCQ_MULTI" | "INTEGER" | undefined;
@@ -1374,6 +1380,9 @@ export declare const ProposePolicySchema: z.ZodObject<{
     exactMatchThreshold?: number | undefined;
     highSimilarityThreshold?: number | undefined;
     mediumSimilarityThreshold?: number | undefined;
+    pastPaperMatchAction?: "WARN" | "BLOCK_UNLESS_JUSTIFIED" | "BLOCK" | undefined;
+    mediumMatchAction?: "NONE" | "WARN" | undefined;
+    treatNumberChangedAsDuplicate?: boolean | undefined;
 }>;
 export type ProposePolicyInput = z.infer<typeof ProposePolicySchema>;
 export declare const ApprovePolicySchema: z.ZodObject<{
@@ -1995,4 +2004,631 @@ export declare const EligibleQuestionSchema: z.ZodObject<{
     topicId?: string | null | undefined;
 }>;
 export type EligibleQuestion = z.infer<typeof EligibleQuestionSchema>;
+export declare const PaperCorpusQuestionTypeEnum: z.ZodEnum<["MCQ_SINGLE", "MCQ_MULTI", "INTEGER"]>;
+export type PaperCorpusQuestionType = z.infer<typeof PaperCorpusQuestionTypeEnum>;
+/** Shared validation for one past-paper question row (JSON or CSV). */
+export declare const PaperCorpusQuestionRowSchema: z.ZodEffects<z.ZodObject<{
+    source_exam: z.ZodString;
+    year: z.ZodNumber;
+    shift: z.ZodDefault<z.ZodOptional<z.ZodString>>;
+    paper_code: z.ZodDefault<z.ZodOptional<z.ZodString>>;
+    question_no: z.ZodString;
+    language: z.ZodString;
+    question_type: z.ZodEnum<["MCQ_SINGLE", "MCQ_MULTI", "INTEGER"]>;
+    stem: z.ZodString;
+    options: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+    subject: z.ZodDefault<z.ZodOptional<z.ZodString>>;
+    topic: z.ZodDefault<z.ZodOptional<z.ZodString>>;
+    correct_answer: z.ZodDefault<z.ZodOptional<z.ZodString>>;
+}, "strip", z.ZodTypeAny, {
+    shift: string;
+    stem: string;
+    language: string;
+    source_exam: string;
+    year: number;
+    paper_code: string;
+    question_no: string;
+    question_type: "MCQ_SINGLE" | "MCQ_MULTI" | "INTEGER";
+    subject: string;
+    topic: string;
+    correct_answer: string;
+    options?: string[] | undefined;
+}, {
+    stem: string;
+    language: string;
+    source_exam: string;
+    year: number;
+    question_no: string;
+    question_type: "MCQ_SINGLE" | "MCQ_MULTI" | "INTEGER";
+    shift?: string | undefined;
+    options?: string[] | undefined;
+    paper_code?: string | undefined;
+    subject?: string | undefined;
+    topic?: string | undefined;
+    correct_answer?: string | undefined;
+}>, {
+    shift: string;
+    stem: string;
+    language: string;
+    source_exam: string;
+    year: number;
+    paper_code: string;
+    question_no: string;
+    question_type: "MCQ_SINGLE" | "MCQ_MULTI" | "INTEGER";
+    subject: string;
+    topic: string;
+    correct_answer: string;
+    options?: string[] | undefined;
+}, {
+    stem: string;
+    language: string;
+    source_exam: string;
+    year: number;
+    question_no: string;
+    question_type: "MCQ_SINGLE" | "MCQ_MULTI" | "INTEGER";
+    shift?: string | undefined;
+    options?: string[] | undefined;
+    paper_code?: string | undefined;
+    subject?: string | undefined;
+    topic?: string | undefined;
+    correct_answer?: string | undefined;
+}>;
+export type PaperCorpusQuestionRow = z.infer<typeof PaperCorpusQuestionRowSchema>;
+/** JSON file top-level format */
+export declare const PaperCorpusJsonFileSchema: z.ZodObject<{
+    corpus: z.ZodObject<{
+        name: z.ZodString;
+        licence_note: z.ZodOptional<z.ZodString>;
+    }, "strip", z.ZodTypeAny, {
+        name: string;
+        licence_note?: string | undefined;
+    }, {
+        name: string;
+        licence_note?: string | undefined;
+    }>;
+    questions: z.ZodArray<z.ZodEffects<z.ZodObject<{
+        source_exam: z.ZodString;
+        year: z.ZodNumber;
+        shift: z.ZodDefault<z.ZodOptional<z.ZodString>>;
+        paper_code: z.ZodDefault<z.ZodOptional<z.ZodString>>;
+        question_no: z.ZodString;
+        language: z.ZodString;
+        question_type: z.ZodEnum<["MCQ_SINGLE", "MCQ_MULTI", "INTEGER"]>;
+        stem: z.ZodString;
+        options: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+        subject: z.ZodDefault<z.ZodOptional<z.ZodString>>;
+        topic: z.ZodDefault<z.ZodOptional<z.ZodString>>;
+        correct_answer: z.ZodDefault<z.ZodOptional<z.ZodString>>;
+    }, "strip", z.ZodTypeAny, {
+        shift: string;
+        stem: string;
+        language: string;
+        source_exam: string;
+        year: number;
+        paper_code: string;
+        question_no: string;
+        question_type: "MCQ_SINGLE" | "MCQ_MULTI" | "INTEGER";
+        subject: string;
+        topic: string;
+        correct_answer: string;
+        options?: string[] | undefined;
+    }, {
+        stem: string;
+        language: string;
+        source_exam: string;
+        year: number;
+        question_no: string;
+        question_type: "MCQ_SINGLE" | "MCQ_MULTI" | "INTEGER";
+        shift?: string | undefined;
+        options?: string[] | undefined;
+        paper_code?: string | undefined;
+        subject?: string | undefined;
+        topic?: string | undefined;
+        correct_answer?: string | undefined;
+    }>, {
+        shift: string;
+        stem: string;
+        language: string;
+        source_exam: string;
+        year: number;
+        paper_code: string;
+        question_no: string;
+        question_type: "MCQ_SINGLE" | "MCQ_MULTI" | "INTEGER";
+        subject: string;
+        topic: string;
+        correct_answer: string;
+        options?: string[] | undefined;
+    }, {
+        stem: string;
+        language: string;
+        source_exam: string;
+        year: number;
+        question_no: string;
+        question_type: "MCQ_SINGLE" | "MCQ_MULTI" | "INTEGER";
+        shift?: string | undefined;
+        options?: string[] | undefined;
+        paper_code?: string | undefined;
+        subject?: string | undefined;
+        topic?: string | undefined;
+        correct_answer?: string | undefined;
+    }>, "many">;
+}, "strip", z.ZodTypeAny, {
+    corpus: {
+        name: string;
+        licence_note?: string | undefined;
+    };
+    questions: {
+        shift: string;
+        stem: string;
+        language: string;
+        source_exam: string;
+        year: number;
+        paper_code: string;
+        question_no: string;
+        question_type: "MCQ_SINGLE" | "MCQ_MULTI" | "INTEGER";
+        subject: string;
+        topic: string;
+        correct_answer: string;
+        options?: string[] | undefined;
+    }[];
+}, {
+    corpus: {
+        name: string;
+        licence_note?: string | undefined;
+    };
+    questions: {
+        stem: string;
+        language: string;
+        source_exam: string;
+        year: number;
+        question_no: string;
+        question_type: "MCQ_SINGLE" | "MCQ_MULTI" | "INTEGER";
+        shift?: string | undefined;
+        options?: string[] | undefined;
+        paper_code?: string | undefined;
+        subject?: string | undefined;
+        topic?: string | undefined;
+        correct_answer?: string | undefined;
+    }[];
+}>;
+export type PaperCorpusJsonFile = z.infer<typeof PaperCorpusJsonFileSchema>;
+/** Validation error for a row */
+export declare const PaperCorpusRowErrorSchema: z.ZodObject<{
+    row: z.ZodNumber;
+    field: z.ZodString;
+    message: z.ZodString;
+}, "strip", z.ZodTypeAny, {
+    message: string;
+    row: number;
+    field: string;
+}, {
+    message: string;
+    row: number;
+    field: string;
+}>;
+export type PaperCorpusRowError = z.infer<typeof PaperCorpusRowErrorSchema>;
+/** Result of corpus validation */
+export declare const PaperCorpusValidationResultSchema: z.ZodObject<{
+    valid: z.ZodBoolean;
+    totalRows: z.ZodNumber;
+    validRows: z.ZodNumber;
+    errorCount: z.ZodNumber;
+    errors: z.ZodArray<z.ZodObject<{
+        row: z.ZodNumber;
+        field: z.ZodString;
+        message: z.ZodString;
+    }, "strip", z.ZodTypeAny, {
+        message: string;
+        row: number;
+        field: string;
+    }, {
+        message: string;
+        row: number;
+        field: string;
+    }>, "many">;
+    withinFileDupeCount: z.ZodNumber;
+    crossCorpusDupeCount: z.ZodNumber;
+    withinFileDupes: z.ZodArray<z.ZodObject<{
+        row: z.ZodNumber;
+        key: z.ZodString;
+    }, "strip", z.ZodTypeAny, {
+        row: number;
+        key: string;
+    }, {
+        row: number;
+        key: string;
+    }>, "many">;
+    crossCorpusDupes: z.ZodArray<z.ZodObject<{
+        row: z.ZodNumber;
+        existingCorpusId: z.ZodString;
+        key: z.ZodString;
+    }, "strip", z.ZodTypeAny, {
+        row: number;
+        key: string;
+        existingCorpusId: string;
+    }, {
+        row: number;
+        key: string;
+        existingCorpusId: string;
+    }>, "many">;
+    preview: z.ZodArray<z.ZodAny, "many">;
+}, "strip", z.ZodTypeAny, {
+    valid: boolean;
+    totalRows: number;
+    errors: {
+        message: string;
+        row: number;
+        field: string;
+    }[];
+    validRows: number;
+    errorCount: number;
+    withinFileDupeCount: number;
+    crossCorpusDupeCount: number;
+    withinFileDupes: {
+        row: number;
+        key: string;
+    }[];
+    crossCorpusDupes: {
+        row: number;
+        key: string;
+        existingCorpusId: string;
+    }[];
+    preview: any[];
+}, {
+    valid: boolean;
+    totalRows: number;
+    errors: {
+        message: string;
+        row: number;
+        field: string;
+    }[];
+    validRows: number;
+    errorCount: number;
+    withinFileDupeCount: number;
+    crossCorpusDupeCount: number;
+    withinFileDupes: {
+        row: number;
+        key: string;
+    }[];
+    crossCorpusDupes: {
+        row: number;
+        key: string;
+        existingCorpusId: string;
+    }[];
+    preview: any[];
+}>;
+export type PaperCorpusValidationResult = z.infer<typeof PaperCorpusValidationResultSchema>;
+/** Create corpus request body */
+export declare const CreatePaperCorpusSchema: z.ZodObject<{
+    name: z.ZodString;
+    licenceNote: z.ZodOptional<z.ZodString>;
+    sourceLabel: z.ZodString;
+}, "strip", z.ZodTypeAny, {
+    name: string;
+    sourceLabel: string;
+    licenceNote?: string | undefined;
+}, {
+    name: string;
+    sourceLabel: string;
+    licenceNote?: string | undefined;
+}>;
+export type CreatePaperCorpusInput = z.infer<typeof CreatePaperCorpusSchema>;
+/** Disable corpus request (requires step-up MFA) */
+export declare const DisablePaperCorpusSchema: z.ZodObject<{
+    reason: z.ZodString;
+    totpToken: z.ZodString;
+}, "strip", z.ZodTypeAny, {
+    totpToken: string;
+    reason: string;
+}, {
+    totpToken: string;
+    reason: string;
+}>;
+export type DisablePaperCorpusInput = z.infer<typeof DisablePaperCorpusSchema>;
+/** Duplicate handling on commit */
+export declare const DuplicateHandlingSchema: z.ZodObject<{
+    withinFileStrategy: z.ZodDefault<z.ZodEnum<["SKIP", "KEEP"]>>;
+    crossCorpusStrategy: z.ZodDefault<z.ZodEnum<["SKIP", "KEEP"]>>;
+}, "strip", z.ZodTypeAny, {
+    withinFileStrategy: "SKIP" | "KEEP";
+    crossCorpusStrategy: "SKIP" | "KEEP";
+}, {
+    withinFileStrategy?: "SKIP" | "KEEP" | undefined;
+    crossCorpusStrategy?: "SKIP" | "KEEP" | undefined;
+}>;
+export type DuplicateHandlingInput = z.infer<typeof DuplicateHandlingSchema>;
+export declare const DraftCheckRequestSchema: z.ZodObject<{
+    stem: z.ZodString;
+    options: z.ZodDefault<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
+    type: z.ZodEnum<["MCQ_SINGLE", "MCQ_MULTI", "INTEGER"]>;
+    language: z.ZodDefault<z.ZodOptional<z.ZodString>>;
+    subject: z.ZodOptional<z.ZodString>;
+    topic: z.ZodOptional<z.ZodString>;
+}, "strip", z.ZodTypeAny, {
+    options: string[];
+    type: "MCQ_SINGLE" | "MCQ_MULTI" | "INTEGER";
+    stem: string;
+    language: string;
+    subject?: string | undefined;
+    topic?: string | undefined;
+}, {
+    type: "MCQ_SINGLE" | "MCQ_MULTI" | "INTEGER";
+    stem: string;
+    options?: string[] | undefined;
+    language?: string | undefined;
+    subject?: string | undefined;
+    topic?: string | undefined;
+}>;
+export type DraftCheckRequest = z.infer<typeof DraftCheckRequestSchema>;
+export declare const MatchTypeEnum: z.ZodEnum<["EXACT", "NEAR", "NUMBERS_CHANGED", "OPTIONS_MATCH", "SEMANTIC"]>;
+export type MatchType = z.infer<typeof MatchTypeEnum>;
+export declare const PastPaperCitationSchema: z.ZodObject<{
+    source_exam: z.ZodString;
+    year: z.ZodNumber;
+    shift: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    paper_code: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    question_no: z.ZodString;
+}, "strip", z.ZodTypeAny, {
+    source_exam: string;
+    year: number;
+    question_no: string;
+    shift?: string | null | undefined;
+    paper_code?: string | null | undefined;
+}, {
+    source_exam: string;
+    year: number;
+    question_no: string;
+    shift?: string | null | undefined;
+    paper_code?: string | null | undefined;
+}>;
+export type PastPaperCitation = z.infer<typeof PastPaperCitationSchema>;
+export declare const DraftMatchSchema: z.ZodObject<{
+    sourceType: z.ZodEnum<["PAST_PAPER", "BANK"]>;
+    matchType: z.ZodEnum<["EXACT", "NEAR", "NUMBERS_CHANGED", "OPTIONS_MATCH", "SEMANTIC"]>;
+    riskLevel: z.ZodEnum<["NONE", "LOW", "MEDIUM", "HIGH", "EXACT"]>;
+    overallScore: z.ZodNumber;
+    citation: z.ZodOptional<z.ZodObject<{
+        source_exam: z.ZodString;
+        year: z.ZodNumber;
+        shift: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+        paper_code: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+        question_no: z.ZodString;
+    }, "strip", z.ZodTypeAny, {
+        source_exam: string;
+        year: number;
+        question_no: string;
+        shift?: string | null | undefined;
+        paper_code?: string | null | undefined;
+    }, {
+        source_exam: string;
+        year: number;
+        question_no: string;
+        shift?: string | null | undefined;
+        paper_code?: string | null | undefined;
+    }>>;
+    matchedText: z.ZodOptional<z.ZodString>;
+    spans: z.ZodOptional<z.ZodArray<z.ZodObject<{
+        start: z.ZodNumber;
+        end: z.ZodNumber;
+        text: z.ZodString;
+    }, "strip", z.ZodTypeAny, {
+        text: string;
+        start: number;
+        end: number;
+    }, {
+        text: string;
+        start: number;
+        end: number;
+    }>, "many">>;
+    bankMessage: z.ZodOptional<z.ZodString>;
+}, "strip", z.ZodTypeAny, {
+    sourceType: "BANK" | "PAST_PAPER";
+    matchType: "EXACT" | "NEAR" | "NUMBERS_CHANGED" | "OPTIONS_MATCH" | "SEMANTIC";
+    riskLevel: "NONE" | "LOW" | "MEDIUM" | "HIGH" | "EXACT";
+    overallScore: number;
+    citation?: {
+        source_exam: string;
+        year: number;
+        question_no: string;
+        shift?: string | null | undefined;
+        paper_code?: string | null | undefined;
+    } | undefined;
+    matchedText?: string | undefined;
+    spans?: {
+        text: string;
+        start: number;
+        end: number;
+    }[] | undefined;
+    bankMessage?: string | undefined;
+}, {
+    sourceType: "BANK" | "PAST_PAPER";
+    matchType: "EXACT" | "NEAR" | "NUMBERS_CHANGED" | "OPTIONS_MATCH" | "SEMANTIC";
+    riskLevel: "NONE" | "LOW" | "MEDIUM" | "HIGH" | "EXACT";
+    overallScore: number;
+    citation?: {
+        source_exam: string;
+        year: number;
+        question_no: string;
+        shift?: string | null | undefined;
+        paper_code?: string | null | undefined;
+    } | undefined;
+    matchedText?: string | undefined;
+    spans?: {
+        text: string;
+        start: number;
+        end: number;
+    }[] | undefined;
+    bankMessage?: string | undefined;
+}>;
+export type DraftMatch = z.infer<typeof DraftMatchSchema>;
+export declare const DraftCheckResponseSchema: z.ZodObject<{
+    riskLevel: z.ZodEnum<["NONE", "LOW", "MEDIUM", "HIGH", "EXACT"]>;
+    matches: z.ZodArray<z.ZodObject<{
+        sourceType: z.ZodEnum<["PAST_PAPER", "BANK"]>;
+        matchType: z.ZodEnum<["EXACT", "NEAR", "NUMBERS_CHANGED", "OPTIONS_MATCH", "SEMANTIC"]>;
+        riskLevel: z.ZodEnum<["NONE", "LOW", "MEDIUM", "HIGH", "EXACT"]>;
+        overallScore: z.ZodNumber;
+        citation: z.ZodOptional<z.ZodObject<{
+            source_exam: z.ZodString;
+            year: z.ZodNumber;
+            shift: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+            paper_code: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+            question_no: z.ZodString;
+        }, "strip", z.ZodTypeAny, {
+            source_exam: string;
+            year: number;
+            question_no: string;
+            shift?: string | null | undefined;
+            paper_code?: string | null | undefined;
+        }, {
+            source_exam: string;
+            year: number;
+            question_no: string;
+            shift?: string | null | undefined;
+            paper_code?: string | null | undefined;
+        }>>;
+        matchedText: z.ZodOptional<z.ZodString>;
+        spans: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            start: z.ZodNumber;
+            end: z.ZodNumber;
+            text: z.ZodString;
+        }, "strip", z.ZodTypeAny, {
+            text: string;
+            start: number;
+            end: number;
+        }, {
+            text: string;
+            start: number;
+            end: number;
+        }>, "many">>;
+        bankMessage: z.ZodOptional<z.ZodString>;
+    }, "strip", z.ZodTypeAny, {
+        sourceType: "BANK" | "PAST_PAPER";
+        matchType: "EXACT" | "NEAR" | "NUMBERS_CHANGED" | "OPTIONS_MATCH" | "SEMANTIC";
+        riskLevel: "NONE" | "LOW" | "MEDIUM" | "HIGH" | "EXACT";
+        overallScore: number;
+        citation?: {
+            source_exam: string;
+            year: number;
+            question_no: string;
+            shift?: string | null | undefined;
+            paper_code?: string | null | undefined;
+        } | undefined;
+        matchedText?: string | undefined;
+        spans?: {
+            text: string;
+            start: number;
+            end: number;
+        }[] | undefined;
+        bankMessage?: string | undefined;
+    }, {
+        sourceType: "BANK" | "PAST_PAPER";
+        matchType: "EXACT" | "NEAR" | "NUMBERS_CHANGED" | "OPTIONS_MATCH" | "SEMANTIC";
+        riskLevel: "NONE" | "LOW" | "MEDIUM" | "HIGH" | "EXACT";
+        overallScore: number;
+        citation?: {
+            source_exam: string;
+            year: number;
+            question_no: string;
+            shift?: string | null | undefined;
+            paper_code?: string | null | undefined;
+        } | undefined;
+        matchedText?: string | undefined;
+        spans?: {
+            text: string;
+            start: number;
+            end: number;
+        }[] | undefined;
+        bankMessage?: string | undefined;
+    }>, "many">;
+    checkedAt: z.ZodString;
+}, "strip", z.ZodTypeAny, {
+    riskLevel: "NONE" | "LOW" | "MEDIUM" | "HIGH" | "EXACT";
+    matches: {
+        sourceType: "BANK" | "PAST_PAPER";
+        matchType: "EXACT" | "NEAR" | "NUMBERS_CHANGED" | "OPTIONS_MATCH" | "SEMANTIC";
+        riskLevel: "NONE" | "LOW" | "MEDIUM" | "HIGH" | "EXACT";
+        overallScore: number;
+        citation?: {
+            source_exam: string;
+            year: number;
+            question_no: string;
+            shift?: string | null | undefined;
+            paper_code?: string | null | undefined;
+        } | undefined;
+        matchedText?: string | undefined;
+        spans?: {
+            text: string;
+            start: number;
+            end: number;
+        }[] | undefined;
+        bankMessage?: string | undefined;
+    }[];
+    checkedAt: string;
+}, {
+    riskLevel: "NONE" | "LOW" | "MEDIUM" | "HIGH" | "EXACT";
+    matches: {
+        sourceType: "BANK" | "PAST_PAPER";
+        matchType: "EXACT" | "NEAR" | "NUMBERS_CHANGED" | "OPTIONS_MATCH" | "SEMANTIC";
+        riskLevel: "NONE" | "LOW" | "MEDIUM" | "HIGH" | "EXACT";
+        overallScore: number;
+        citation?: {
+            source_exam: string;
+            year: number;
+            question_no: string;
+            shift?: string | null | undefined;
+            paper_code?: string | null | undefined;
+        } | undefined;
+        matchedText?: string | undefined;
+        spans?: {
+            text: string;
+            start: number;
+            end: number;
+        }[] | undefined;
+        bankMessage?: string | undefined;
+    }[];
+    checkedAt: string;
+}>;
+export type DraftCheckResponse = z.infer<typeof DraftCheckResponseSchema>;
+export declare const SubmitJustificationSchema: z.ZodObject<{
+    justification: z.ZodString;
+    pastPaperCitation: z.ZodOptional<z.ZodObject<{
+        source_exam: z.ZodString;
+        year: z.ZodNumber;
+        shift: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+        paper_code: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+        question_no: z.ZodString;
+    }, "strip", z.ZodTypeAny, {
+        source_exam: string;
+        year: number;
+        question_no: string;
+        shift?: string | null | undefined;
+        paper_code?: string | null | undefined;
+    }, {
+        source_exam: string;
+        year: number;
+        question_no: string;
+        shift?: string | null | undefined;
+        paper_code?: string | null | undefined;
+    }>>;
+}, "strip", z.ZodTypeAny, {
+    justification: string;
+    pastPaperCitation?: {
+        source_exam: string;
+        year: number;
+        question_no: string;
+        shift?: string | null | undefined;
+        paper_code?: string | null | undefined;
+    } | undefined;
+}, {
+    justification: string;
+    pastPaperCitation?: {
+        source_exam: string;
+        year: number;
+        question_no: string;
+        shift?: string | null | undefined;
+        paper_code?: string | null | undefined;
+    } | undefined;
+}>;
+export type SubmitJustificationInput = z.infer<typeof SubmitJustificationSchema>;
 //# sourceMappingURL=schemas.d.ts.map

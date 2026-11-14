@@ -3,6 +3,9 @@ import {
   apiRequest } from '../lib/api-client';
 import { KaTeXPreview } from '../components/KaTeXPreview';
 import { DiffViewer } from '../components/DiffViewer';
+import { OriginalityPanel } from '../components/OriginalityPanel';
+import { JustificationModal } from '../components/JustificationModal';
+
 import {
   Save,
   Send,
@@ -102,6 +105,9 @@ export const QuestionEditorPage: React.FC<QuestionEditorPageProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   const [userSpecialization, setUserSpecialization] = useState<string[]>([]);
+  const [showJustificationModal, setShowJustificationModal] = useState(false);
+  const [flaggedCitation, setFlaggedCitation] = useState<any>(null);
+
 
   // Fetch syllabus
   useEffect(() => {
@@ -311,7 +317,7 @@ export const QuestionEditorPage: React.FC<QuestionEditorPageProps> = ({
   };
 
   // Save handler
-  const handleSave = async (submitDirectly: boolean) => {
+  const handleSave = async (submitDirectly: boolean, explicitJustification?: string) => {
     if (!stem.trim()) {
       alert('Question stem is required');
       return;
@@ -320,6 +326,12 @@ export const QuestionEditorPage: React.FC<QuestionEditorPageProps> = ({
       alert('Please select a subject');
       return;
     }
+
+    if (submitDirectly && flaggedCitation && !explicitJustification) {
+      setShowJustificationModal(true);
+      return;
+    }
+
 
     setSaving(true);
     setError(null);
@@ -666,7 +678,7 @@ export const QuestionEditorPage: React.FC<QuestionEditorPageProps> = ({
               </div>
             )}
           </div>
-        </div>
+</div>
 
         {/* Right 2 Columns: Stem, Options, KaTeX Preview */}
         <div className="lg:col-span-2 space-y-6">
@@ -702,6 +714,16 @@ export const QuestionEditorPage: React.FC<QuestionEditorPageProps> = ({
                 </button>
               </div>
             </div>
+            {/* Live Originality Feedback Header Bar (Compact & Expandable) */}
+            <OriginalityPanel
+              stem={stem}
+              options={options}
+              questionType={questionType}
+              language={language}
+              subjectName={subjects.find((s) => s.id === subjectId)?.name}
+              onJustificationNeeded={(cit) => setFlaggedCitation(cit)}
+            />
+
 
             {activeTab === 'edit' ? (
               <div>
@@ -876,6 +898,16 @@ export const QuestionEditorPage: React.FC<QuestionEditorPageProps> = ({
           </div>
         </div>
       </div>
+      {showJustificationModal && (
+        <JustificationModal
+          citation={flaggedCitation}
+          onSubmit={async (justificationText) => {
+            await handleSave(true, justificationText);
+          }}
+          onClose={() => setShowJustificationModal(false)}
+        />
+      )}
+
     </div>
   );
 };
